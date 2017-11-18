@@ -4,9 +4,14 @@ $(function() {
 		self.settings = undefined;
 		self.btnPreheat = undefined;
 		
-        self.allSettings = parameters[0];
-        self.loginState = parameters[1];
-        self.printerState = parameters[2];
+		self.MODE_PREHEAT = 0;
+		self.MODE_COOLDOWN = 1;
+		
+		self.mode = self.MODE_PREHEAT;
+		
+		self.loginState = parameters[0];
+		self.temperatureState = parameters[1];
+		self.printerState = parameters[2];
 		
 		self.onAfterBinding = function() {
 			// self.settings = self.allSettings.settings.plugins.preheat;
@@ -38,9 +43,29 @@ $(function() {
 			});
 		};
 		
+		self.cooldown = function() {
+			$.ajax({
+				url: API_BASEURL + "printer/tool",
+				type: "POST",
+				dataType: "json",
+				data: JSON.stringify({
+					command: "target",
+					targets: {
+						tool0: 0
+					}
+				}),
+				contentType: "application/json; charset=UTF-8"
+			});
+		};
+		
 		
 		self.btnPreheatClick = function() {
-			self.preheat();
+			if (self.mode == self.MODE_PREHEAT) {
+				self.preheat();
+			}
+			if (self.mode == self.MODE_COOLDOWN) {
+				self.cooldown();
+			}
 		}
 		
 		self.initializeButton = function() {
@@ -52,19 +77,38 @@ $(function() {
 			self.btnPreheat = document.createElement("button");
 			self.btnPreheat.classList.add("btn");
 			self.btnPreheat.classList.add("span4");
-			self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
 			self.btnPreheat.innerText = "Preheat";
 			self.btnPreheat.addEventListener("click", self.btnPreheatClick);
 			buttonContainer.appendChild(self.btnPreheat);
 		};
-
-		self.initializeButton();
+		
+		self.updateButton = function() {
+			var target = self.temperatureState.tools()[0].target();
+			
+			if (target == 0) {
+				self.mode = self.MODE_PREHEAT;
+				self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
+				self.btnPreheat.innerText = "Preheat";
+			} else {
+				self.mode = self.MODE_COOLDOWN;
+				self.btnPreheat.title = "Disables tool heating.";
+				self.btnPreheat.innerText = "Cooldown";
+			}
+			
+			self.btnPreheat.disabled = !self.temperatureState.isReady()
+				|| self.temperatureState.isPrinting()
+				|| !self.loginState.isUser()
+				|| (target == 0 && self.printerState.filename() == null);
+		};
+		
+		self.initializeButton();		
+		self.fromCurrentData = function() { self.updateButton(); };
 	}
 	
 	// view model class, parameters for constructor, container to bind to
 	OCTOPRINT_VIEWMODELS.push([
 		PreheatViewModel,
-		["settingsViewModel", "loginStateViewModel", "printerStateViewModel"],
+		["loginStateViewModel", "temperatureViewModel", "printerStateViewModel"],
 		[]
 	]);
 });
