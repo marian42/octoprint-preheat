@@ -56,7 +56,10 @@ class PreheatAPIPlugin(octoprint.plugin.StartupPlugin,
 		new_target = self.get_print_temperature()
 		self._logger.info("Print temp: " + str(new_target))
 		self._printer.set_temperature("tool0", new_target)
-		
+	
+	def is_api_adminonly(self):
+		return True
+	
 	def on_api_command(self, command, data):
 		import flask
 		if command == "preheat":
