@@ -1,6 +1,10 @@
-# Preheat
+# Preheat Button
 
-**TODO:** Describe what your plugin does.
+This Octoprint plugin adds a preheat button to preheat the nozzle to the printing temperature of the selected gcode file.
+This can be done manually but this plugin makes it more convenient.
+If the target temperature is not zero, the button will instead turn off nozzle heating (cooldown).
+
+![Screenshot](https://i.imgur.com/vGcvSK4.png)
 
 ## Setup
 
@@ -8,10 +12,3 @@ Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wik
 or manually using this URL:
 
     https://github.com/marian42/octoprint-preheat/archive/master.zip
-
-**TODO:** Describe how to install your plugin, if more needs to be done than just installing it via pip or through
-the plugin manager.
-
-## Configuration
-
-**TODO:** Describe your plugin's configuration options (if any).
