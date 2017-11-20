@@ -41,10 +41,12 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		try:
 			with open(path_on_disk, "r") as file:
 				while max_lines > 0:
-					line = file.readline()
+					line = file.readline().strip()
 					if line == "":
 						break
 					if line.startswith("M104 S") or line.startswith("M109 S"):
+						if line.index(';') != -1:
+							line = line[:line.index(';')].strip()
 						try:
 							value = float(line[6:])
 							if value > 0:
@@ -61,7 +63,6 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	def preheat(self):
 		if not self._printer.is_operational() or self._printer.is_printing():
 			raise PreheatError("Can't set the temperature because the printer is not ready.")
-		current_target = self._printer.get_current_temperatures()["tool0"]["target"]
 		new_target = self.get_print_temperature()
 		self._logger.info("Print temp: " + str(new_target))
 		self._printer.set_temperature("tool0", new_target)
