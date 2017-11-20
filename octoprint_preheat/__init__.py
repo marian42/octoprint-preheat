@@ -12,13 +12,9 @@ class PreheatError(Exception):
 	def __init__(self, message):
 		super(PreheatError, self).__init__(message)
 
-class PreheatAPIPlugin(octoprint.plugin.StartupPlugin,
-					   octoprint.plugin.TemplatePlugin,
+class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					   octoprint.plugin.SimpleApiPlugin,
 					   octoprint.plugin.AssetPlugin):
-	
-	def on_after_startup(self):
-		pass
 	
 	def get_assets(self):
 		return dict(

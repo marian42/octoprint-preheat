@@ -12,10 +12,6 @@ $(function() {
 		self.loginState = parameters[0];
 		self.temperatureState = parameters[1];
 		self.printerState = parameters[2];
-		
-		self.onAfterBinding = function() {
-			// self.settings = self.allSettings.settings.plugins.preheat;
-		};
 
 		self.preheat = function() {
 			$.ajax({
@@ -105,7 +101,6 @@ $(function() {
 		self.fromCurrentData = function() { self.updateButton(); };
 	}
 	
-	// view model class, parameters for constructor, container to bind to
 	OCTOPRINT_VIEWMODELS.push([
 		PreheatViewModel,
 		["loginStateViewModel", "temperatureViewModel", "printerStateViewModel"],
