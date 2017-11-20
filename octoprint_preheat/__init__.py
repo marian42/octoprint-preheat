@@ -17,7 +17,7 @@ class PreheatAPIPlugin(octoprint.plugin.StartupPlugin,
 	
 	def on_after_startup(self):
 		pass
-
+	
 	def get_assets(self):
 		return dict(
 			js = ["js/preheat.js"]
@@ -40,13 +40,24 @@ class PreheatAPIPlugin(octoprint.plugin.StartupPlugin,
 		file = open(path_on_disk, 'r')
 		line = file.readline()
 		max_lines = 1000
-		while line and max_lines > 0:
-			if (line.startswith("M104 S") or line.startswith("M104 S")):
-				value = int(line[6:])
-				if (value > 0):
-					return value
-			line = file.readline()
-			max_lines -= 1
+		try:
+			with open(path_on_disk, "r") as file:
+				while max_lines > 0:
+					line = file.readline()
+					if line == "":
+						break
+					if line.startswith("M104 S") or line.startswith("M109 S"):
+						try:
+							value = float(line[6:])
+							if value > 0:
+								return value
+						except ValueError:
+							self._logger.warn("Error parsing heat command: {}".format(line))
+							pass
+					max_lines -= 1
+		except:
+			self._logger.exception("Something went wrong while trying to read the preheat temperature from {}".format(path_on_disk))
+
 		raise PreheatError("Could not find a preheat command in the gcode file.")
 		
 	def preheat(self):
