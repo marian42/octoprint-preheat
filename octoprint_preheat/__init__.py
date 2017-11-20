@@ -1,6 +1,8 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+from flask.ext.login import current_user
+
 import octoprint.filemanager
 import octoprint.plugin
 
@@ -68,12 +70,11 @@ class PreheatAPIPlugin(octoprint.plugin.StartupPlugin,
 		self._logger.info("Print temp: " + str(new_target))
 		self._printer.set_temperature("tool0", new_target)
 	
-	def is_api_adminonly(self):
-		return True
-	
 	def on_api_command(self, command, data):
 		import flask
 		if command == "preheat":
+			if current_user.is_anonymous():
+				return "Insufficient rights", 403
 			try:
 				self.preheat()
 			except PreheatError as error:
