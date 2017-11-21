@@ -5,6 +5,7 @@ from flask.ext.login import current_user
 
 import octoprint.filemanager
 import octoprint.plugin
+from octoprint.util.comm import strip_comment
 
 import flask
 
@@ -41,12 +42,11 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		try:
 			with open(path_on_disk, "r") as file:
 				while max_lines > 0:
-					line = file.readline().strip()
+					line = file.readline()
 					if line == "":
 						break
 					if line.startswith("M104 S") or line.startswith("M109 S"):
-						if line.index(';') != -1:
-							line = line[:line.index(';')].strip()
+						line = strip_comment(line)
 						try:
 							value = float(line[6:])
 							if value > 0:
