@@ -77,6 +77,26 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			except PreheatError as error:
 				self._logger.info("Preheat error: " + str(error.message))
 				return str(error.message), 405
+				
+	def get_update_information(self, *args, **kwargs):
+		return dict(
+			preheat = dict(
+				displayName=self._plugin_name,
+				displayVersion=self._plugin_version,
+				
+				type="github_release",
+				current=self._plugin_version,
+				user="marian42",
+				repo="octoprint-preheat",
+				
+				pip="https://github.com/marian42/octoprint-preheat/archive/{target}.zip"
+			)
+		)
 
-__plugin_name__ = "Preheat"
+
+__plugin_name__ = "Preheat Button"
 __plugin_implementation__ = PreheatAPIPlugin()
+
+__plugin_hooks__ = {
+	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+}
