@@ -76,6 +76,13 @@ $(function() {
 			self.btnPreheat.innerText = "Preheat";
 			self.btnPreheat.addEventListener("click", self.btnPreheatClick);
 			buttonContainer.appendChild(self.btnPreheat);
+			
+			if (typeof(TouchUI) != "undefined") {
+				$('.progress-text-centered')[0].style.top = "calc(2.125rem + 90px)";
+				$('#state')[0].style.paddingTop = "155px";
+				self.btnPreheat.style.fontSize = "1.4rem";
+				self.btnPreheat.style.display = "block";
+			}
 		};
 		
 		self.updateButton = function() {
