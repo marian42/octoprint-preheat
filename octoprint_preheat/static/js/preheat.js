@@ -40,18 +40,33 @@ $(function() {
 		};
 		
 		self.cooldown = function() {
+			var targets = {};
+			for (tool of Object.keys(self.temperatureState.tools())) {
+				targets["tool" + tool] = 0;
+			}
+			
 			$.ajax({
 				url: API_BASEURL + "printer/tool",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify({
 					command: "target",
-					targets: {
-						tool0: 0
-					}
+					targets: targets
 				}),
 				contentType: "application/json; charset=UTF-8"
 			});
+			if (self.temperatureState.hasBed()) {
+				$.ajax({
+					url: API_BASEURL + "printer/bed",
+					type: "POST",
+					dataType: "json",
+					data: JSON.stringify({
+						command: "target",
+						targets: {target: 0}
+					}),
+					contentType: "application/json; charset=UTF-8"
+				});
+			}
 		};
 		
 		
