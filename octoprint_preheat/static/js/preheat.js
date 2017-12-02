@@ -62,7 +62,7 @@ $(function() {
 					dataType: "json",
 					data: JSON.stringify({
 						command: "target",
-						targets: {target: 0}
+						target: 0
 					}),
 					contentType: "application/json; charset=UTF-8"
 				});
