@@ -86,18 +86,12 @@ $(function() {
 			buttonContainer.children[1].style.marginLeft = "0";
 			
 			self.btnPreheat = document.createElement("button");
+			self.btnPreheat.id = "job_preheat";
 			self.btnPreheat.classList.add("btn");
 			self.btnPreheat.classList.add("span4");
 			self.btnPreheat.innerText = "Preheat";
 			self.btnPreheat.addEventListener("click", self.btnPreheatClick);
 			buttonContainer.appendChild(self.btnPreheat);
-			
-			if (typeof(TouchUI) != "undefined") {
-				$('.progress-text-centered')[0].style.top = "calc(2.125rem + 90px)";
-				$('#state')[0].style.paddingTop = "155px";
-				self.btnPreheat.style.fontSize = "1.4rem";
-				self.btnPreheat.style.display = "block";
-			}
 		};
 		
 		self.anyTemperatureTarget = function() {

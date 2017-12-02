@@ -1,0 +1,12 @@
+#touch body .progress-text-centered {
+	top: calc(2.125rem + 90px) !important;
+}
+
+#touch body #state {
+	padding-top: 155px !important;
+}
+
+#touch body #job_preheat {
+	font-size: 1.4rem !important;
+	display: block !important;
+}
