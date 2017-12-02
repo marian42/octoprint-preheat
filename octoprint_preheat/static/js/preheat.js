@@ -100,10 +100,24 @@ $(function() {
 			}
 		};
 		
+		self.anyTemperatureTarget = function() {
+			if (self.temperatureState.hasBed() && self.temperatureState.bedTemp.target() != 0) {
+				return true;
+			}
+			
+			for (var i = 0; i < self.temperatureState.tools().length; i++) {
+				if (self.temperatureState.tools()[i].target() != 0) {
+					return true;
+				}
+			}
+			
+			return false;
+		}
+		
 		self.updateButton = function() {
 			var target = self.temperatureState.tools()[0].target();
 			
-			if (target == 0) {
+			if (!self.anyTemperatureTarget()) {
 				self.mode = self.MODE_PREHEAT;
 				self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
 				self.btnPreheat.innerText = "Preheat";
