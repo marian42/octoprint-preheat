@@ -15,7 +15,17 @@ class PreheatError(Exception):
 
 class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					   octoprint.plugin.SimpleApiPlugin,
-					   octoprint.plugin.AssetPlugin):
+					   octoprint.plugin.AssetPlugin,
+					   octoprint.plugin.SettingsPlugin):
+	
+	def get_settings_defaults(self):
+		return dict(enable_tool = True,
+					enable_bed = True)
+					
+	def get_template_configs(self):
+		return [
+			dict(type="settings", custom_bindings = False)
+		]
 	
 	def get_assets(self):
 		return dict(
@@ -50,6 +60,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	def get_temperatures(self):
 		printer = self._printer
 		
+		enable_bed = self._settings.get_boolean(["enable_bed"])
+		enable_tool = self._settings.get_boolean(["enable_tool"])
+		
 		if (printer.get_current_job()["file"]["path"] == None):
 			raise PreheatError("No gcode file loaded.")
 			
@@ -69,11 +82,11 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					line = file.readline()
 					if line == "":
 						break
-					if line.startswith("M104") or line.startswith("M109"):	# Set tool temperature
+					if enable_tool and (line.startswith("M104") or line.startswith("M109")):	# Set tool temperature
 						tool, temperature = self.parse_line(line)
 						if temperature != None and tool not in temperatures:
 							temperatures[tool] = temperature
-					if line.startswith("M190") or line.startswith("M140"):	# Set bed temperature
+					if enable_bed and (line.startswith("M190") or line.startswith("M140")):	# Set bed temperature
 						_, temperature = self.parse_line(line)
 						if temperature != None and "bed" not in temperatures:
 							temperatures["bed"] = temperature
@@ -91,6 +104,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			raise PreheatError("Can't set the temperature because the printer is not ready.")
 		
 		temperatures = self.get_temperatures()
+		
 		for key in temperatures:
 			self._logger.info("Preheating " + key + " to " + str(temperatures[key]))
 			self._printer.set_temperature(key, temperatures[key])
