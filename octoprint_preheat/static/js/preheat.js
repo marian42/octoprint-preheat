@@ -88,7 +88,7 @@ $(function() {
 			self.btnPreheat = document.createElement("button");
 			self.btnPreheat.classList.add("btn");
 			self.btnPreheat.classList.add("span4");
-			self.btnPreheat.innerText = "Preheat";
+			self.btnPreheat.innerHTML = "<i class=\"fa fa-fire\" /> Preheat";
 			self.btnPreheat.addEventListener("click", self.btnPreheatClick);
 			buttonContainer.appendChild(self.btnPreheat);
 			
@@ -106,11 +106,11 @@ $(function() {
 			if (target == 0) {
 				self.mode = self.MODE_PREHEAT;
 				self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
-				self.btnPreheat.innerText = "Preheat";
+				self.btnPreheat.innerHTML = "<i class=\"fa fa-fire\" /> Preheat";
 			} else {
 				self.mode = self.MODE_COOLDOWN;
 				self.btnPreheat.title = "Disables tool heating.";
-				self.btnPreheat.innerText = "Cooldown";
+				self.btnPreheat.innerHTML = "<i class=\"fa fa-snowflake-o\" /> Cooldown";
 			}
 			
 			self.btnPreheat.disabled = !self.temperatureState.isReady()
