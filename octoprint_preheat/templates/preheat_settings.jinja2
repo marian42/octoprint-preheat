@@ -1,5 +1,6 @@
 <form class="form-horizontal">
     <div class="control-group">
+		<legend>Enable preheating</legend>
         <label class="control-label">Enable tool preheating</label>
         <div class="controls">
             <input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.enable_tool">
@@ -8,5 +9,25 @@
         <div class="controls">
             <input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.enable_bed">
         </div>
+		<br><br>
+		
+		<legend>Fallback Temperatures</legend>
+		<div>
+			Fallback temperatures are used if the gcode file is on the SD card or if no heating command was found in the gcode file.
+			Set these to 0 to not preheat in these cases.
+		</div>
+		
+		<div style="overflow: auto;">
+			<label class="control-label">Fallback temperature for tool preheating</label>
+			<div class="controls">
+				<input type="text" class="input-block-level" data-bind="value: settings.plugins.preheat.fallback_tool">
+			</div>
+		</div>
+		<div style="overflow: auto;">
+			<label class="control-label">Fallback temperature for bed preheating</label>
+			<div class="controls">
+				<input type="text" class="input-block-level" data-bind="value: settings.plugins.preheat.fallback_bed">
+			</div>
+		</div>
     </div>
 </form>

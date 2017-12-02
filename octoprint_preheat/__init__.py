@@ -20,7 +20,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	
 	def get_settings_defaults(self):
 		return dict(enable_tool = True,
-					enable_bed = True)
+					enable_bed = True,
+					fallback_tool = 0,
+					fallback_bed = 0)
 					
 	def get_template_configs(self):
 		return [
@@ -55,7 +57,30 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 				tool = "tool" + item[1:].strip()
 				
 		return tool, temperature
+	
+	def apply_fallback_temperature(self):
+		fallback_successful = False
+		enable_bed = self._settings.get_boolean(["enable_bed"])
+		enable_tool = self._settings.get_boolean(["enable_tool"])
+		fallback_tool = self._settings.get_float(["fallback_tool"])
+		fallback_bed = self._settings.get_float(["fallback_bed"])
 		
+		printer_profile = self._printer._printerProfileManager.get_current_or_default()
+		
+		if enable_bed and fallback_bed > 0 and printer_profile["heatedBed"]:
+			self._logger.info("Using fallback temperature, preheating bed to " + str(fallback_bed))
+			self._printer.set_temperature("bed", fallback_bed)
+			fallback_successful = True
+	
+		if enable_tool and fallback_tool > 0:
+			extruder_count = printer_profile["extruder"]["count"]
+			for i in range(extruder_count):
+				tool = "tool" + str(i)
+				self._logger.info("Using fallback temperature, preheating " + tool + " to " + str(fallback_tool))
+				self._printer.set_temperature(tool, fallback_tool)
+			fallback_successful = True
+		
+		return fallback_successful
 
 	def get_temperatures(self):
 		printer = self._printer
@@ -103,11 +128,15 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		if not self._printer.is_operational() or self._printer.is_printing():
 			raise PreheatError("Can't set the temperature because the printer is not ready.")
 		
-		temperatures = self.get_temperatures()
-		
-		for key in temperatures:
-			self._logger.info("Preheating " + key + " to " + str(temperatures[key]))
-			self._printer.set_temperature(key, temperatures[key])
+		try:
+			temperatures = self.get_temperatures()
+			
+			for key in temperatures:
+				self._logger.info("Preheating " + key + " to " + str(temperatures[key]))
+				self._printer.set_temperature(key, temperatures[key])
+		except PreheatError as error:
+			if not self.apply_fallback_temperature():
+				raise PreheatError(str(error.message) + "\n" + "You can configure fallback temperatures in the plugin settings for this case.") 
 	
 	def on_api_command(self, command, data):
 		import flask
