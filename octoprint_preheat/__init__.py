@@ -54,6 +54,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			raise PreheatError("No gcode file loaded.")
 			
 		file_name = printer.get_current_job()["file"]["path"]
+		
+		if printer.get_current_job()["file"]["origin"] != octoprint.filemanager.FileDestinations.LOCAL:
+			raise PreheatError("Can't read the temperature from a gcode file stored on the SD card.")
 		path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)
 		
 		file = open(path_on_disk, 'r')
