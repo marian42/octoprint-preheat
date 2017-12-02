@@ -17,16 +17,18 @@
 			Set these to 0 to not preheat in these cases.
 		</div>
 		
-		<div style="overflow: auto;">
-			<label class="control-label">Fallback temperature for tool preheating</label>
-			<div class="controls">
-				<input type="text" class="input-block-level" data-bind="value: settings.plugins.preheat.fallback_tool">
+		<div class="preheat_settings_item">
+			<label class="control-label preheat_long_label">Fallback temperature for tool preheating</label>
+			<div class="input-append">
+				<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.plugins.preheat.fallback_tool">
+				<span class="add-on">&deg;</span>
 			</div>
 		</div>
-		<div style="overflow: auto;">
-			<label class="control-label">Fallback temperature for bed preheating</label>
-			<div class="controls">
-				<input type="text" class="input-block-level" data-bind="value: settings.plugins.preheat.fallback_bed">
+		<div class="preheat_settings_item">
+			<label class="control-label preheat_long_label">Fallback temperature for bed preheating</label>
+			<div class="input-append">
+				<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.plugins.preheat.fallback_bed">
+				<span class="add-on">&deg;</span>
 			</div>
 		</div>
     </div>

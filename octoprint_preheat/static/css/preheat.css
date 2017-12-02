@@ -10,3 +10,11 @@
 	font-size: 1.4rem !important;
 	display: block !important;
 }
+
+.preheat_settings_item {
+	overflow: auto;
+}
+
+.preheat_long_label {
+	width: 300px !important;
+}
