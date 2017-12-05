@@ -69,7 +69,6 @@ $(function() {
 			}
 		};
 		
-		
 		self.btnPreheatClick = function() {
 			if (self.mode == self.MODE_PREHEAT) {
 				self.preheat();
@@ -88,9 +87,14 @@ $(function() {
 			self.btnPreheat = document.createElement("button");
 			self.btnPreheat.classList.add("btn");
 			self.btnPreheat.classList.add("span4");
-			self.btnPreheat.innerHTML = "<i class=\"fa fa-fire\" /> Preheat";
 			self.btnPreheat.addEventListener("click", self.btnPreheatClick);
 			buttonContainer.appendChild(self.btnPreheat);
+			
+			self.btnPreheatIcon = document.createElement("i");
+			self.btnPreheat.appendChild(self.btnPreheatIcon);
+			
+			self.btnPreheatText = document.createTextNode(" ");
+			self.btnPreheat.appendChild(self.btnPreheatText);
 			
 			if (typeof(TouchUI) != "undefined") {
 				$('.progress-text-centered')[0].style.top = "calc(2.125rem + 90px)";
@@ -98,19 +102,28 @@ $(function() {
 				self.btnPreheat.style.fontSize = "1.4rem";
 				self.btnPreheat.style.display = "block";
 			}
+			
+			self.updateButton();
 		};
 		
 		self.updateButton = function() {
 			var target = self.temperatureState.tools()[0].target();
 			
+			//clear button icon class list
+			var btnIconClassList = self.btnPreheatIcon.classList;
+			while (btnIconClassList.length > 0)
+				btnIconClassList.remove(btnIconClassList.item(0));
+			
 			if (target == 0) {
 				self.mode = self.MODE_PREHEAT;
 				self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
-				self.btnPreheat.innerHTML = "<i class=\"fa fa-fire\" /> Preheat";
+				self.btnPreheatText.nodeValue = " Preheat";
+				self.btnPreheatIcon.classList.add("fa", "fa-fire");
 			} else {
 				self.mode = self.MODE_COOLDOWN;
-				self.btnPreheat.title = "Disables tool heating.";
-				self.btnPreheat.innerHTML = "<i class=\"fa fa-snowflake-o\" /> Cooldown";
+				self.btnPreheat.title = "Disables tool heating.";			
+				self.btnPreheatText.nodeValue = " Cooldown";
+				self.btnPreheatIcon.classList.add("fa", "fa-snowflake-o");
 			}
 			
 			self.btnPreheat.disabled = !self.temperatureState.isReady()
