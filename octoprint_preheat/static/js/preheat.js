@@ -125,7 +125,7 @@ $(function() {
 			} else {
 				self.mode = self.MODE_COOLDOWN;
 				self.btnPreheat.title = "Disables tool heating.";			
-				self.btnPreheatText.nodeValue = " Cooldown";
+				self.btnPreheatText.nodeValue = " Cool";
 				self.btnPreheatIcon.classList.add("fa", "fa-snowflake-o");
 			}
 			
