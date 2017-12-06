@@ -3,6 +3,8 @@ $(function() {
 		var self = this;
 		self.settings = undefined;
 		self.btnPreheat = undefined;
+		self.btnPreheatIcon = undefined;
+		self.btnPreheatText = undefined;
 		
 		self.MODE_PREHEAT = 0;
 		self.MODE_COOLDOWN = 1;
@@ -96,14 +98,15 @@ $(function() {
 			self.btnPreheatText = document.createTextNode(" ");
 			self.btnPreheat.appendChild(self.btnPreheatText);
 			
+			self.btnPreheatText.nodeValue = " Preheat";
+			self.btnPreheatIcon.classList.add("fa", "fa-fire");
+			
 			if (typeof(TouchUI) != "undefined") {
 				$('.progress-text-centered')[0].style.top = "calc(2.125rem + 90px)";
 				$('#state')[0].style.paddingTop = "155px";
 				self.btnPreheat.style.fontSize = "1.4rem";
 				self.btnPreheat.style.display = "block";
 			}
-			
-			self.updateButton();
 		};
 		
 		self.updateButton = function() {
