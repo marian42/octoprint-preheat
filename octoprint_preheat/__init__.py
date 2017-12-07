@@ -31,7 +31,8 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	
 	def get_assets(self):
 		return dict(
-			js = ["js/preheat.js"]
+			js = ["js/preheat.js"],
+			css = ["css/preheat.css"]
 		)
 		
 	def get_api_commands(self):

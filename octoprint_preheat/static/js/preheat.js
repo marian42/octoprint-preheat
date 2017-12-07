@@ -87,10 +87,10 @@ $(function() {
 			buttonContainer.children[1].style.marginLeft = "0";
 			
 			self.btnPreheat = document.createElement("button");
+			self.btnPreheat.id = "job_preheat";
 			self.btnPreheat.classList.add("btn");
 			self.btnPreheat.classList.add("span4");
 			self.btnPreheat.addEventListener("click", self.btnPreheatClick);
-			buttonContainer.appendChild(self.btnPreheat);
 			
 			self.btnPreheatIcon = document.createElement("i");
 			self.btnPreheat.appendChild(self.btnPreheatIcon);
@@ -101,13 +101,22 @@ $(function() {
 			self.btnPreheatText.nodeValue = " Preheat";
 			self.btnPreheatIcon.classList.add("fa", "fa-fire");
 			
-			if (typeof(TouchUI) != "undefined") {
-				$('.progress-text-centered')[0].style.top = "calc(2.125rem + 90px)";
-				$('#state')[0].style.paddingTop = "155px";
-				self.btnPreheat.style.fontSize = "1.4rem";
-				self.btnPreheat.style.display = "block";
-			}
+			buttonContainer.appendChild(self.btnPreheat);
 		};
+		
+		self.anyTemperatureTarget = function() {
+			if (self.temperatureState.hasBed() && self.temperatureState.bedTemp.target() != 0) {
+				return true;
+			}
+			
+			for (var i = 0; i < self.temperatureState.tools().length; i++) {
+				if (self.temperatureState.tools()[i].target() != 0) {
+					return true;
+				}
+			}
+			
+			return false;
+		}
 		
 		self.updateButton = function() {
 			var target = self.temperatureState.tools()[0].target();
@@ -117,7 +126,7 @@ $(function() {
 			while (btnIconClassList.length > 0)
 				btnIconClassList.remove(btnIconClassList.item(0));
 			
-			if (target == 0) {
+			if (!self.anyTemperatureTarget()) {
 				self.mode = self.MODE_PREHEAT;
 				self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
 				self.btnPreheatText.nodeValue = " Preheat";

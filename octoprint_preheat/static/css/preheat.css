@@ -1,0 +1,21 @@
+#touch body .progress-text-centered {
+	top: calc(2.125rem + 90px) !important;
+}
+
+#touch body #state {
+	padding-top: 155px !important;
+}
+
+#touch body #job_preheat {
+	font-size: 1.4rem !important;
+	display: block !important;
+}
+
+.preheat_settings_item {
+	overflow: auto;
+}
+
+.preheat_long_label {
+	width: 300px !important;
+	margin-right: 10px;
+}
