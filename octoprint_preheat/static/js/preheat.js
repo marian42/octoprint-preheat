@@ -14,7 +14,7 @@ $(function() {
 		self.loginState = parameters[0];
 		self.temperatureState = parameters[1];
 		self.printerState = parameters[2];
-
+		
 		self.preheat = function() {
 			$.ajax({
 				url: API_BASEURL + "plugin/preheat",
