@@ -3,6 +3,8 @@ $(function() {
 		var self = this;
 		self.settings = undefined;
 		self.btnPreheat = undefined;
+		self.btnPreheatIcon = undefined;
+		self.btnPreheatText = undefined;
 		
 		self.MODE_PREHEAT = 0;
 		self.MODE_COOLDOWN = 1;
@@ -12,7 +14,7 @@ $(function() {
 		self.loginState = parameters[0];
 		self.temperatureState = parameters[1];
 		self.printerState = parameters[2];
-
+		
 		self.preheat = function() {
 			$.ajax({
 				url: API_BASEURL + "plugin/preheat",
@@ -69,7 +71,6 @@ $(function() {
 			}
 		};
 		
-		
 		self.btnPreheatClick = function() {
 			if (self.mode == self.MODE_PREHEAT) {
 				self.preheat();
@@ -89,8 +90,17 @@ $(function() {
 			self.btnPreheat.id = "job_preheat";
 			self.btnPreheat.classList.add("btn");
 			self.btnPreheat.classList.add("span4");
-			self.btnPreheat.innerText = "Preheat";
 			self.btnPreheat.addEventListener("click", self.btnPreheatClick);
+			
+			self.btnPreheatIcon = document.createElement("i");
+			self.btnPreheat.appendChild(self.btnPreheatIcon);
+			
+			self.btnPreheatText = document.createTextNode(" ");
+			self.btnPreheat.appendChild(self.btnPreheatText);
+			
+			self.btnPreheatText.nodeValue = " Preheat";
+			self.btnPreheatIcon.classList.add("fa", "fa-fire");
+			
 			buttonContainer.appendChild(self.btnPreheat);
 		};
 		
@@ -111,14 +121,21 @@ $(function() {
 		self.updateButton = function() {
 			var target = self.temperatureState.tools()[0].target();
 			
+			//clear button icon class list
+			var btnIconClassList = self.btnPreheatIcon.classList;
+			while (btnIconClassList.length > 0)
+				btnIconClassList.remove(btnIconClassList.item(0));
+			
 			if (!self.anyTemperatureTarget()) {
 				self.mode = self.MODE_PREHEAT;
 				self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
-				self.btnPreheat.innerText = "Preheat";
+				self.btnPreheatText.nodeValue = " Preheat";
+				self.btnPreheatIcon.classList.add("fa", "fa-fire");
 			} else {
 				self.mode = self.MODE_COOLDOWN;
-				self.btnPreheat.title = "Disables tool heating.";
-				self.btnPreheat.innerText = "Cooldown";
+				self.btnPreheat.title = "Disables tool heating.";			
+				self.btnPreheatText.nodeValue = " Cool";
+				self.btnPreheatIcon.classList.add("fa", "fa-snowflake-o");
 			}
 			
 			self.btnPreheat.disabled = !self.temperatureState.isReady()
