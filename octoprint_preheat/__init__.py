@@ -111,11 +111,11 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					if enable_tool and (line.startswith("M104") or line.startswith("M109")):	# Set tool temperature
 						tool, temperature = self.parse_line(line)
 						if temperature != None and tool not in temperatures:
-							temperatures[tool] = temperature
+							temperatures[tool] = temperature + 1
 					if enable_bed and (line.startswith("M190") or line.startswith("M140")):	# Set bed temperature
 						_, temperature = self.parse_line(line)
 						if temperature != None and "bed" not in temperatures:
-							temperatures["bed"] = temperature
+							temperatures["bed"] = temperature + 1
 						
 					max_lines -= 1
 		except:
