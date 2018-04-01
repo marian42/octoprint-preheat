@@ -121,21 +121,18 @@ $(function() {
 		self.updateButton = function() {
 			var target = self.temperatureState.tools()[0].target();
 			
-			//clear button icon class list
-			var btnIconClassList = self.btnPreheatIcon.classList;
-			while (btnIconClassList.length > 0)
-				btnIconClassList.remove(btnIconClassList.item(0));
-			
 			if (!self.anyTemperatureTarget()) {
 				self.mode = self.MODE_PREHEAT;
 				self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
 				self.btnPreheatText.nodeValue = " Preheat";
-				self.btnPreheatIcon.classList.add("fa", "fa-fire");
+				self.btnPreheatIcon.classList.add("fa-fire");
+				self.btnPreheatIcon.classList.remove("fa-snowflake-o");
 			} else {
 				self.mode = self.MODE_COOLDOWN;
 				self.btnPreheat.title = "Disables tool heating.";			
 				self.btnPreheatText.nodeValue = " Cool";
-				self.btnPreheatIcon.classList.add("fa", "fa-snowflake-o");
+				self.btnPreheatIcon.classList.add("fa-snowflake-o");
+				self.btnPreheatIcon.classList.remove("fa-fire");
 			}
 			
 			self.btnPreheat.disabled = !self.temperatureState.isReady()
