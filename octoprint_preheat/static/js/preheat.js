@@ -119,8 +119,6 @@ $(function() {
 		}
 		
 		self.updateButton = function() {
-			var target = self.temperatureState.tools()[0].target();
-			
 			if (!self.anyTemperatureTarget()) {
 				self.mode = self.MODE_PREHEAT;
 				self.btnPreheat.title = "Preheats the nozzle for the loaded gcode file.";
@@ -135,14 +133,20 @@ $(function() {
 				self.btnPreheatIcon.classList.remove("fa-fire");
 			}
 			
+			var target = 0;
+			if (self.temperatureState.tools().length > 0) {
+				target = self.temperatureState.tools()[0].target();
+			}
+			
 			self.btnPreheat.disabled = !self.temperatureState.isReady()
 				|| self.temperatureState.isPrinting()
 				|| !self.loginState.isUser()
 				|| (target == 0 && self.printerState.filename() == null);
 		};
 		
-		self.initializeButton();		
+		self.initializeButton();
 		self.fromCurrentData = function() { self.updateButton(); };
+		self.updateButton();
 	}
 	
 	OCTOPRINT_VIEWMODELS.push([
