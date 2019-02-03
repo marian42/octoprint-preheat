@@ -24,7 +24,8 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		return dict(enable_tool = True,
 					enable_bed = True,
 					fallback_tool = 0,
-					fallback_bed = 0)
+					fallback_bed = 0,
+					wait_for_bed = False)
 					
 	def get_template_configs(self):
 		return [
@@ -197,7 +198,10 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			if current_user.is_anonymous():
 				return "Insufficient rights", 403
 			try:
-				self.preheat()
+				if self._settings.get_boolean(["wait_for_bed"]):
+					self.start_preheat_sequence()
+				else:
+					self.preheat()
 			except PreheatError as error:
 				self._logger.info("Preheat error: " + str(error.message))
 				return str(error.message), 405
