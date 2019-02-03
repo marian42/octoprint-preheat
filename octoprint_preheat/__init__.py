@@ -8,6 +8,8 @@ import octoprint.plugin
 from octoprint.util.comm import strip_comment
 
 import flask
+import time
+from threading import Thread
 
 class PreheatError(Exception):
 	def __init__(self, message):
@@ -123,26 +125,65 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		
 		if len(temperatures) == 0:
 			raise PreheatError("Could not find a preheat command in the gcode file.")
-		return temperatures
-	
-	def apply_offsets(self, temperatures):
+
 		offsets = self._printer.get_current_data()["offsets"]
 		for tool in temperatures:
 			if tool in offsets:
 				temperatures[tool] += offsets[tool]
+		
+		return temperatures
 
-	def preheat(self):
+	def check_state(self):
 		if not self._printer.is_operational() or self._printer.is_printing():
 			raise PreheatError("Can't set the temperature because the printer is not ready.")
+
+	def start_preheat_sequence(self):
+		self.check_state()
+		
+		preheat_temperatures = self.get_temperatures()
+		
+		if "bed" not in preheat_temperatures:
+			self.preheat()
+			return
+		
+		bed_temp = preheat_temperatures["bed"]
+		self._logger.info("Preheating bed to " + str(bed_temp) + " and waiting.")
+		self._printer.set_temperature("bed", bed_temp)
+
+		thread = Thread(target = self.wait_for_bed_and_preheat, args = (preheat_temperatures, ))
+		thread.start()
+
+	def wait_for_bed_and_preheat(self, preheat_temperatures):
+		current_temperatures = self._printer.get_current_temperatures()
+
+		initial_targets = {tool: current_temperatures[tool]["target"] for tool in preheat_temperatures.keys()}
+		initial_targets["bed"] = preheat_temperatures["bed"]
+
+		while (True):
+			time.sleep(0.4)
+
+			current_temperatures = self._printer.get_current_temperatures()
+			for tool in preheat_temperatures.keys():
+				if current_temperatures[tool]["target"] != initial_targets[tool]:
+					self._logger.info("Preheating cancelled because the temperature was changed manually.")
+					return
+
+			if abs(current_temperatures["bed"]["actual"] - current_temperatures["bed"]["target"]) < 4:
+				break
 		
 		try:
-			temperatures = self.get_temperatures()
-			self.apply_offsets(temperatures)
-			
-			self._logger.info("Preheating bed to " + str(target) + " and waiting.")
-			self._printer.commands(["M190 S{}".format(target)])
+			self.preheat(preheat_temperatures)
+		except PreheatError as error:
+			self._logger.info("Preheat error: " + str(error.message))
 
-			for tool in temperatures:
+	def preheat(self, temperatures = None):
+		self.check_state()
+
+		try:
+			if temperatures is None:
+				temperatures = self.get_temperatures()
+			
+			for tool, target in temperatures.iteritems():
 				self._logger.info("Preheating " + tool + " to " + str(target) + ".")
 				self._printer.set_temperature(tool, target)
 				
