@@ -124,23 +124,28 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		if len(temperatures) == 0:
 			raise PreheatError("Could not find a preheat command in the gcode file.")
 		return temperatures
-		
+	
+	def apply_offsets(self, temperatures):
+		offsets = self._printer.get_current_data()["offsets"]
+		for tool in temperatures:
+			if tool in offsets:
+				temperatures[tool] += offsets[tool]
+
 	def preheat(self):
 		if not self._printer.is_operational() or self._printer.is_printing():
 			raise PreheatError("Can't set the temperature because the printer is not ready.")
 		
-		offsets = self._printer.get_current_data()["offsets"]
-
 		try:
 			temperatures = self.get_temperatures()
+			self.apply_offsets(temperatures)
 			
-			for key in temperatures:
-				target = temperatures[key]
-				if key in offsets:
-					target += offsets[key]
+			self._logger.info("Preheating bed to " + str(target) + " and waiting.")
+			self._printer.commands(["M190 S{}".format(target)])
 
-				self._logger.info("Preheating " + key + " to " + str(target))
-				self._printer.set_temperature(key, target)
+			for tool in temperatures:
+				self._logger.info("Preheating " + tool + " to " + str(target) + ".")
+				self._printer.set_temperature(tool, target)
+				
 		except PreheatError as error:
 			if not self.apply_fallback_temperature():
 				raise PreheatError(str(error.message) + "\n" + "You can configure fallback temperatures in the plugin settings for this case.") 
