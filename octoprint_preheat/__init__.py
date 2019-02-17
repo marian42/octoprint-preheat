@@ -66,8 +66,38 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 				
 		return tool, temperature
 
+
+	def read_temperatures_from_file(self, path_on_disk):
+		enable_bed = self._settings.get_boolean(["enable_bed"])
+		enable_tool = self._settings.get_boolean(["enable_tool"])
+
+		file = open(path_on_disk, 'r')
+		line = file.readline()
+		max_lines = 1000
+		temperatures = dict()
+		try:
+			with open(path_on_disk, "r") as file:
+				while max_lines > 0:
+					line = file.readline()
+					if line == "":
+						break
+					if enable_tool and (line.startswith("M104") or line.startswith("M109")): # Set tool temperature
+						tool, temperature = self.parse_line(line)
+						if temperature != None and tool not in temperatures:
+							temperatures[tool] = temperature
+					if enable_bed and (line.startswith("M190") or line.startswith("M140")):	# Set bed temperature
+						_, temperature = self.parse_line(line)
+						if temperature != None and "bed" not in temperatures:
+							temperatures["bed"] = temperature
+						
+					max_lines -= 1
+		except:
+			self._logger.exception("Something went wrong while trying to read the preheat temperature from {}".format(path_on_disk))
+		
+		return temperatures
 	
-	def get_fallback_temperature(self):
+	
+	def get_fallback_temperatures(self):
 		enable_bed = self._settings.get_boolean(["enable_bed"])
 		enable_tool = self._settings.get_boolean(["enable_tool"])
 		fallback_tool = self._settings.get_float(["fallback_tool"])
@@ -90,50 +120,27 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 
 	def get_temperatures(self):
-		printer = self._printer
-		
-		enable_bed = self._settings.get_boolean(["enable_bed"])
-		enable_tool = self._settings.get_boolean(["enable_tool"])
-		
-		if (printer.get_current_job()["file"]["path"] == None):
+		if (self._printer.get_current_job()["file"]["path"] == None):
 			raise PreheatError("No gcode file loaded.")
-			
-		file_name = printer.get_current_job()["file"]["path"]
 		
-		if printer.get_current_job()["file"]["origin"] != octoprint.filemanager.FileDestinations.LOCAL:
-			raise PreheatError("Can't read the temperature from a gcode file stored on the SD card.")
-		path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)
-		
-		file = open(path_on_disk, 'r')
-		line = file.readline()
-		max_lines = 1000
-		temperatures = dict()
-		try:
-			with open(path_on_disk, "r") as file:
-				while max_lines > 0:
-					line = file.readline()
-					if line == "":
-						break
-					if enable_tool and (line.startswith("M104") or line.startswith("M109")):	# Set tool temperature
-						tool, temperature = self.parse_line(line)
-						if temperature != None and tool not in temperatures:
-							temperatures[tool] = temperature
-					if enable_bed and (line.startswith("M190") or line.startswith("M140")):	# Set bed temperature
-						_, temperature = self.parse_line(line)
-						if temperature != None and "bed" not in temperatures:
-							temperatures["bed"] = temperature
-						
-					max_lines -= 1
-		except:
-			self._logger.exception("Something went wrong while trying to read the preheat temperature from {}".format(path_on_disk))
-		
-		if len(temperatures) == 0:
-			temperatures = self.get_fallback_temperature()
+		if self._printer.get_current_job()["file"]["origin"] == octoprint.filemanager.FileDestinations.SDCARD:
+			temperatures = self.get_fallback_temperatures()
 
+			if len(temperatures) == 0:
+				raise PreheatError("Can't read the temperature from a gcode file stored on the SD card.")
+			else:
+				self._logger.info("Can't read the temperatures from the SD card, using fallback temperatures.")
+		else:
+			file_name = self._printer.get_current_job()["file"]["path"]
+			path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)		
+			temperatures = self.read_temperatures_from_file(path_on_disk)
+
+			if len(temperatures) == 0:
+				temperatures = self.get_fallback_temperatures()
 			if len(temperatures) == 0:
 				raise PreheatError("Could not find any preheat commands in the gcode file. You can configure fallback temperatures for this case.")
 			else:
-				self._logger.info("Could not find any preheat commands in the gcode file, using fallback temperatures.")	
+				self._logger.info("Could not find any preheat commands in the gcode file, using fallback temperatures.")
 
 		offsets = self._printer.get_current_data()["offsets"]
 		for tool in temperatures:
