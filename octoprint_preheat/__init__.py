@@ -137,10 +137,10 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 			if len(temperatures) == 0:
 				temperatures = self.get_fallback_temperatures()
-			if len(temperatures) == 0:
-				raise PreheatError("Could not find any preheat commands in the gcode file. You can configure fallback temperatures for this case.")
-			else:
-				self._logger.info("Could not find any preheat commands in the gcode file, using fallback temperatures.")
+				if len(temperatures) == 0:
+					raise PreheatError("Could not find any preheat commands in the gcode file. You can configure fallback temperatures for this case.")
+				else:
+					self._logger.info("Could not find any preheat commands in the gcode file, using fallback temperatures.")
 
 		offsets = self._printer.get_current_data()["offsets"]
 		for tool in temperatures:
