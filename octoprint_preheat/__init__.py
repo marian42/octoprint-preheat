@@ -26,7 +26,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					fallback_tool = 0,
 					fallback_bed = 0,
 					wait_for_bed = False,
-					notify_on_complete = False)
+					on_complete_show_popup = False,
+					on_conplete_send_gcode = False,
+					on_conplete_send_gcode_command = "M117 Preheat complete. ; Update LCD\nM300 S660 P200 ; Beep")
 
 					
 	def get_template_configs(self):
@@ -182,8 +184,16 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	
 	def notify_preheat_complete(self):
 		self._logger.info("Preheating complete.")
-		self._plugin_manager.send_plugin_message(self._identifier, dict(type="preheat_complete"))
-		
+		if self._settings.get_boolean(["on_complete_show_popup"]):
+			self._plugin_manager.send_plugin_message(self._identifier, dict(type="preheat_complete"))
+		if self._settings.get_boolean(["on_conplete_send_gcode"]):
+			command = self._settings.get(["on_conplete_send_gcode_command"])
+			self._printer.commands(command.split("\n"))
+	
+
+	def is_notify_on_complete_enabled(self):
+		return self._settings.get_boolean(["on_complete_show_popup"]) \
+			or self._settings.get_boolean(["on_conplete_send_gcode"])
 
 	def preheat_thread(self, preheat_temperatures):
 		try:
@@ -191,7 +201,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 				self.preheat_and_wait({"bed": preheat_temperatures["bed"]})
 				del preheat_temperatures["bed"]
 			
-			if self._settings.get_boolean(["notify_on_complete"]):
+			if self.is_notify_on_complete_enabled():
 				self.preheat_and_wait(preheat_temperatures)
 				self.notify_preheat_complete()
 			else:
@@ -210,7 +220,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 		preheat_temperatures = self.get_temperatures()
 
-		use_thread = self._settings.get_boolean(["wait_for_bed"]) or self._settings.get_boolean(["notify_on_complete"])
+		use_thread = self._settings.get_boolean(["wait_for_bed"]) or self.is_notify_on_complete_enabled()
 
 		if use_thread:
 			thread = Thread(target = self.preheat_thread, args = (preheat_temperatures, ))
