@@ -25,7 +25,8 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					enable_bed = True,
 					fallback_tool = 0,
 					fallback_bed = 0,
-					wait_for_bed = False)
+					wait_for_bed = False,
+					notify_on_complete = False)
 
 					
 	def get_template_configs(self):
@@ -155,65 +156,69 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			raise PreheatError("Can't set the temperature because the printer is not ready.")
 	
 
-	def start_preheat_sequence(self):
-		self.check_state()
+	def preheat_and_wait(self, preheat_temperatures):
+		self.preheat_immediately(preheat_temperatures)
 		
-		preheat_temperatures = self.get_temperatures()
-		
-		if "bed" not in preheat_temperatures:
-			self.preheat()
-			return
-		
-		bed_temp = preheat_temperatures["bed"]
-		self._logger.info("Preheating bed to " + str(bed_temp) + " and waiting.")
-		self._printer.set_temperature("bed", bed_temp)
-
-		thread = Thread(target = self.wait_for_bed_and_preheat, args = (preheat_temperatures, ))
-		thread.start()
-
-
-	def wait_for_bed_and_preheat(self, preheat_temperatures):
 		current_temperatures = self._printer.get_current_temperatures()
-
 		initial_targets = {tool: current_temperatures[tool]["target"] for tool in preheat_temperatures.keys()}
-		initial_targets["bed"] = preheat_temperatures["bed"]
+		for tool, temperature in preheat_temperatures.iteritems():
+			initial_targets[tool] = temperature
 
 		while (True):
 			time.sleep(0.4)
 
 			current_temperatures = self._printer.get_current_temperatures()
-			for tool in preheat_temperatures.keys():
+			for tool in initial_targets:
 				if current_temperatures[tool]["target"] != initial_targets[tool]:
-					self._logger.info("Preheating cancelled because the temperature was changed manually.")
-					return
+					raise PreheatError("Preheating cancelled because the temperature was changed manually.")
 
-			if abs(current_temperatures["bed"]["actual"] - current_temperatures["bed"]["target"]) < 4:
-				break
+			if not self._printer.is_operational() or self._printer.is_printing():
+				raise PreheatError("Preheating cancelled because the printer state changed.")
+
+			complete = [abs(current_temperatures[tool]["actual"] - preheat_temperatures[tool]) < 4 for tool in preheat_temperatures]
+			if all(complete):
+				return
+
+	
+	def notify_preheat_complete(self):
+		self._logger.info("Preheating complete.")
+		self._plugin_manager.send_plugin_message(self._identifier, dict(type="preheat_complete"))
 		
+
+	def preheat_thread(self, preheat_temperatures):
 		try:
-			self.preheat_all(preheat_temperatures)
+			if self._settings.get_boolean(["wait_for_bed"]) and "bed" in preheat_temperatures:
+				self.preheat_and_wait({"bed": preheat_temperatures["bed"]})
+				del preheat_temperatures["bed"]
+			
+			if self._settings.get_boolean(["notify_on_complete"]):
+				self.preheat_and_wait(preheat_temperatures)
+				self.notify_preheat_complete()
+			else:
+				self.preheat_immediately(preheat_temperatures)
 		except PreheatError as error:
 			self._logger.info("Preheat error: " + str(error.message))
 
 
-	def preheat_all(self, temperatures = None):
-		self.check_state()
-
-		if temperatures is None:
-			temperatures = self.get_temperatures()
-		
-		for tool, target in temperatures.iteritems():
+	def preheat_immediately(self, preheat_temperatures):
+		for tool, target in preheat_temperatures.iteritems():
 			self._logger.info("Preheating " + tool + " to " + str(target) + ".")
 			self._printer.set_temperature(tool, target)
 
 	def preheat(self):
-		if self._settings.get_boolean(["wait_for_bed"]):
-			self.start_preheat_sequence()
+		self.check_state()
+
+		preheat_temperatures = self.get_temperatures()
+
+		use_thread = self._settings.get_boolean(["wait_for_bed"]) or self._settings.get_boolean(["notify_on_complete"])
+
+		if use_thread:
+			thread = Thread(target = self.preheat_thread, args = (preheat_temperatures, ))
+			thread.start()
 		else:
-			self.preheat_all()
+			self.preheat_immediately(preheat_temperatures)
 	
 	def on_api_command(self, command, data):
-		import flask
 		if command == "preheat":
 			if current_user.is_anonymous():
 				return "Insufficient rights", 403

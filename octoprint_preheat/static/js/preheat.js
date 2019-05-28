@@ -143,6 +143,16 @@ $(function() {
 				|| !self.loginState.isUser()
 				|| (target == 0 && self.printerState.filename() == null);
 		};
+
+		self.onDataUpdaterPluginMessage = function(plugin, data) {
+			if (plugin == "preheat" && data.type == "preheat_complete") {
+				new PNotify({
+					title: 'Preheat complete',
+					text: 'Printing temperatures reached.',
+					type: 'success'
+				});
+			}
+		}
 		
 		self.initializeButton();
 		self.fromCurrentData = function() { self.updateButton(); };
