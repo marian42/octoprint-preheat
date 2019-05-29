@@ -123,6 +123,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 
 	def get_temperatures(self):
+		if not self._settings.get_boolean(["enable_bed"]) and not self._settings.get_boolean(["enable_tool"]):
+			raise PreheatError("Preheating is disabled in the plugin settings.")
+
 		if (self._printer.get_current_job()["file"]["path"] == None):
 			raise PreheatError("No gcode file loaded.")
 		
