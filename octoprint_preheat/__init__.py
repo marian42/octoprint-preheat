@@ -202,7 +202,6 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		try:
 			if self._settings.get_boolean(["wait_for_bed"]) and "bed" in preheat_temperatures:
 				self.preheat_and_wait({"bed": preheat_temperatures["bed"]})
-				del preheat_temperatures["bed"]
 			
 			if self.is_notify_on_complete_enabled():
 				self.preheat_and_wait(preheat_temperatures)
