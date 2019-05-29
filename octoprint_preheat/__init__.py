@@ -210,7 +210,8 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			else:
 				self.preheat_immediately(preheat_temperatures)
 		except PreheatError as error:
-			self._logger.info("Preheat error: " + str(error.message))
+			self._logger.warn("Preheat error: " + str(error.message))
+			self._plugin_manager.send_plugin_message(self._identifier, dict(type="preheat_warning", message=error.message))
 
 
 	def preheat_immediately(self, preheat_temperatures):

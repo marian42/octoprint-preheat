@@ -152,6 +152,13 @@ $(function() {
 					type: 'success'
 				});
 			}
+			if (plugin == "preheat" && data.type == "preheat_warning") {
+				new PNotify({
+					title: 'Preheating cancelled',
+					text: data.message,
+					type: 'warning'
+				});
+			}
 		}
 		
 		self.initializeButton();
