@@ -14,6 +14,7 @@ $(function() {
 		self.loginState = parameters[0];
 		self.temperatureState = parameters[1];
 		self.printerState = parameters[2];
+		self.settings = parameters[3];
 		
 		self.preheat = function() {
 			$.ajax({
@@ -141,7 +142,7 @@ $(function() {
 			self.btnPreheat.disabled = !self.temperatureState.isReady()
 				|| self.temperatureState.isPrinting()
 				|| !self.loginState.isUser()
-				|| (target == 0 && self.printerState.filename() == null);
+				|| (target == 0 && self.printerState.filename() == null && !self.settings.settings.plugins.preheat.use_fallback_when_no_file_selected());
 		};
 
 		self.onDataUpdaterPluginMessage = function(plugin, data) {
@@ -168,7 +169,7 @@ $(function() {
 	
 	OCTOPRINT_VIEWMODELS.push([
 		PreheatViewModel,
-		["loginStateViewModel", "temperatureViewModel", "printerStateViewModel"],
+		["loginStateViewModel", "temperatureViewModel", "printerStateViewModel", "settingsViewModel"],
 		[]
 	]);
 });

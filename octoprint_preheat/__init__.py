@@ -28,7 +28,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					wait_for_bed = False,
 					on_complete_show_popup = False,
 					on_conplete_send_gcode = False,
-					on_conplete_send_gcode_command = "M117 Preheat complete. ; Update LCD\nM300 S660 P200 ; Beep")
+					on_conplete_send_gcode_command = "M117 Preheat complete. ; Update LCD\nM300 S660 P200 ; Beep",
+					use_fallback_when_no_file_selected = False
+		)
 
 					
 	def get_template_configs(self):
@@ -127,9 +129,11 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			raise PreheatError("Preheating is disabled in the plugin settings.")
 
 		if (self._printer.get_current_job()["file"]["path"] == None):
-			raise PreheatError("No gcode file loaded.")
-		
-		if self._printer.get_current_job()["file"]["origin"] == octoprint.filemanager.FileDestinations.SDCARD:
+			if self._settings.get_boolean(["use_fallback_when_no_file_selected"]):
+				temperatures = self.get_fallback_temperatures()
+			else:
+				raise PreheatError("No gcode file loaded.")
+		elif self._printer.get_current_job()["file"]["origin"] == octoprint.filemanager.FileDestinations.SDCARD:
 			temperatures = self.get_fallback_temperatures()
 
 			if len(temperatures) == 0:
