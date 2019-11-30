@@ -245,7 +245,16 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 				self._logger.info("Preheat error: " + str(error.message))
 				return str(error.message), 405
 
-				
+	def gcode_script_variables(self, comm, script_type, script_name, *args, **kwargs):
+		if not script_type == "gcode" or not script_name == "beforePrintStarted":
+			return None
+
+		prefix = None
+		postfix = None
+		variables = self.get_temperatures()
+		return prefix, postfix, variables
+
+
 	def get_update_information(self, *args, **kwargs):
 		return dict(
 			preheat = dict(
@@ -266,5 +275,6 @@ __plugin_name__ = "Preheat Button"
 __plugin_implementation__ = PreheatAPIPlugin()
 
 __plugin_hooks__ = {
-	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+	"octoprint.comm.protocol.scripts": __plugin_implementation__.gcode_script_variables
 }
