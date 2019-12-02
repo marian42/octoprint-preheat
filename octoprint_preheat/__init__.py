@@ -246,7 +246,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 				return str(error.message), 405
 
 	def gcode_script_variables(self, comm, script_type, script_name, *args, **kwargs):
-		if not script_type == "gcode" or not script_name == "beforePrintStarted":
+		if not script_type == "gcode":
 			return None
 
 		prefix = None
