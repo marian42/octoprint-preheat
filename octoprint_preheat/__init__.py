@@ -245,7 +245,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 				self._logger.info("Preheat error: " + str(error.message))
 				return str(error.message), 405
 
-	def gcode_script_variables(self, comm, script_type, script_name, *args, **kwargs):
+	def get_gcode_script_variables(self, comm, script_type, script_name, *args, **kwargs):
 		if not script_type == "gcode":
 			return None
 
@@ -276,5 +276,5 @@ __plugin_implementation__ = PreheatAPIPlugin()
 
 __plugin_hooks__ = {
 	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
-	"octoprint.comm.protocol.scripts": __plugin_implementation__.gcode_script_variables
+	"octoprint.comm.protocol.scripts": __plugin_implementation__.get_gcode_script_variables
 }
