@@ -28,6 +28,8 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					fallback_tool = 0,
 					fallback_bed = 0,
 					wait_for_bed = False,
+					on_start_send_gcode = False,
+					on_start_send_gcode_command = "M117 Preheating... ; Update LCD",
 					on_complete_show_popup = False,
 					on_conplete_send_gcode = False,
 					on_conplete_send_gcode_command = "M117 Preheat complete. ; Update LCD\nM300 S660 P200 ; Beep",
@@ -230,6 +232,10 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 	def preheat(self):
 		self.check_state()
+
+		if self._settings.get_boolean(["on_start_send_gcode"]):
+			command = self._settings.get(["on_start_send_gcode_command"])
+			self._printer.commands(command.split("\n"))
 
 		preheat_temperatures = self.get_temperatures()
 

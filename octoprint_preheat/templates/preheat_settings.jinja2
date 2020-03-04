@@ -40,7 +40,7 @@
 
 		<legend>Sequenced Preheating</legend>
         <div>
-			Preheat bed first, then heat printheads once the bed has reached it's target temperature.
+			Preheat bed first, heat printheads once the bed has reached its target temperature.
 			If this option is disabled, the bed and printheads are heated right away.
 			If you don't have a heated bed, this option makes no difference.
 		</div>
@@ -48,9 +48,21 @@
         <div class="controls">
             <input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.wait_for_bed">
         </div>
+		<br> <br>
+		<legend>Before Preheating</legend>
+        <div class="preheat_settings_item">
+			<label class="control-label">Send gcode</label>
+			<div class="controls">
+				<input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.on_start_send_gcode">
+			</div>
+			<label class="control-label">Commands</label>
+			<div class="controls">
+				<textarea class="input-block-level" data-bind="value: settings.plugins.preheat.on_start_send_gcode_command"></textarea>
+			</div>
+		</div>
 
 		<br><br>
-		<legend>After preheating is complete</legend>
+		<legend>After Preheating is complete</legend>
 		<div class="preheat_settings_item">
 			<label class="control-label">Show popup</label>
 			<div class="controls">
