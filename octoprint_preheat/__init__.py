@@ -1,7 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-from flask.ext.login import current_user
+from flask_login import current_user
 
 import octoprint.filemanager
 import octoprint.plugin
@@ -10,6 +10,8 @@ from octoprint.util.comm import strip_comment
 import flask
 import time
 from threading import Thread
+
+__plugin_pythoncompat__ = ">=2.7,<4"
 
 class PreheatError(Exception):
 	def __init__(self, message):
@@ -170,7 +172,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		
 		current_temperatures = self._printer.get_current_temperatures()
 		initial_targets = {tool: current_temperatures[tool]["target"] for tool in preheat_temperatures.keys()}
-		for tool, temperature in preheat_temperatures.iteritems():
+		for tool, temperature in preheat_temperatures.items():
 			initial_targets[tool] = temperature
 
 		while (True):
@@ -218,7 +220,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 
 	def preheat_immediately(self, preheat_temperatures):
-		for tool, target in preheat_temperatures.iteritems():
+		for tool, target in preheat_temperatures.items():
 			self._logger.info("Preheating " + tool + " to " + str(target) + ".")
 			self._printer.set_temperature(tool, target)
 
