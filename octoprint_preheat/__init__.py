@@ -251,7 +251,10 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 		prefix = None
 		postfix = None
-		variables = self.get_temperatures()
+		try:
+			variables = self.get_temperatures()
+		except PreheatError:
+			variables = {}
 		return prefix, postfix, variables
 
 
