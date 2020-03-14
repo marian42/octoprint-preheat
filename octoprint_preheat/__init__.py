@@ -6,6 +6,7 @@ from flask_login import current_user
 import octoprint.filemanager
 import octoprint.plugin
 from octoprint.util.comm import strip_comment
+from octoprint.printer import PrinterInterface
 
 import flask
 import time
@@ -71,7 +72,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					self._logger.warn("Error parsing heat command: {}".format(line))
 					pass
 			if item.startswith("T"):
-				tool = "tool" + item[1:].strip()
+				new_tool = "tool" + item[1:].strip()
+				if PrinterInterface.valid_heater_regex.match(new_tool):
+					tool = new_tool
 				
 		return tool, temperature
 
@@ -92,9 +95,11 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					if line == "":
 						break
 					if line.startswith("T"): # Select tool
-						tool = "tool" + strip_comment(line)[1:].strip()
-						if tool == "tool":
-							tool = "tool0"
+						new_tool = "tool" + strip_comment(line)[1:].strip()
+						if new_tool == "tool":
+							new_tool = "tool0"
+						if PrinterInterface.valid_heater_regex.match(new_tool):
+							tool = new_tool
 					if enable_tool and (line.startswith("M104") or line.startswith("M109")): # Set tool temperature
 						tool, temperature = self.parse_line(line, tool)
 						if temperature != None and tool not in temperatures:
