@@ -16,6 +16,7 @@ __plugin_pythoncompat__ = ">=2.7,<4"
 class PreheatError(Exception):
 	def __init__(self, message):
 		super(PreheatError, self).__init__(message)
+		self.message = message
 
 class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					   octoprint.plugin.SimpleApiPlugin,
