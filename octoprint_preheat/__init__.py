@@ -87,7 +87,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		line = file.readline()
 		max_lines = 1000
 		temperatures = dict()
-		tool = "tool0"
+		current_tool = "tool0"
 		try:
 			with open(path_on_disk, "r") as file:
 				while max_lines > 0:
@@ -99,9 +99,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 						if new_tool == "tool":
 							new_tool = "tool0"
 						if PrinterInterface.valid_heater_regex.match(new_tool):
-							tool = new_tool
+							current_tool = new_tool
 					if enable_tool and (line.startswith("M104") or line.startswith("M109")): # Set tool temperature
-						tool, temperature = self.parse_line(line, tool)
+						tool, temperature = self.parse_line(line, current_tool)
 						if temperature != None and tool not in temperatures:
 							temperatures[tool] = temperature
 					if enable_bed and (line.startswith("M190") or line.startswith("M140")):	# Set bed temperature
