@@ -5,9 +5,17 @@
         <div class="controls">
             <input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.enable_tool">
         </div>
+        <br>
+
 		<label class="control-label">Enable bed preheating</label>
         <div class="controls">
             <input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.enable_bed">
+        </div>
+        <br>
+
+        <label class="control-label">Enable chamber preheating</label>
+        <div class="controls">
+            <input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.enable_chamber">
         </div>
 		<br><br>
 		
@@ -32,6 +40,14 @@
 				<span class="add-on">&deg;</span>
 			</div>
 		</div>
+		<br>
+		<div class="preheat_settings_item">
+			<label class="control-label preheat_long_label">Fallback temperature for chamber preheating</label>
+			<div class="input-append">
+				<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.plugins.preheat.fallback_chamber">
+				<span class="add-on">&deg;</span>
+			</div>
+		</div>
 		<label class="control-label preheat_long_label">Use fallback temperatures to preheat when no file is selected</label>
         <div class="controls">
             <input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.use_fallback_when_no_file_selected">
@@ -40,9 +56,10 @@
 
 		<legend>Sequenced Preheating</legend>
         <div>
-			Preheat bed first, heat printheads once the bed has reached its target temperature.
-			If this option is disabled, the bed and printheads are heated right away.
-			If you don't have a heated bed, this option makes no difference.
+			Preheat bed and chamber first, heat printheads once the bed and chamber has 
+			reached its target temperature.
+			If this option is disabled, the bed, chamber and printheads are heated right away.
+			If you don't have a heated bed or chamber, this option makes no difference.
 		</div>
 		<label class="control-label">Enable</label>
         <div class="controls">

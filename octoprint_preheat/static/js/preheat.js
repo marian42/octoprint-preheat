@@ -70,6 +70,18 @@ $(function() {
 					contentType: "application/json; charset=UTF-8"
 				});
 			}
+			if (self.temperatureState.hasChamber()) {
+				$.ajax({
+					url: API_BASEURL + "printer/chamber",
+					type: "POST",
+					dataType: "json",
+					data: JSON.stringify({
+						command: "target",
+						target: 0
+					}),
+					contentType: "application/json; charset=UTF-8"
+				});
+			}
 		};
 		
 		self.btnPreheatClick = function() {

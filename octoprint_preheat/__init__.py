@@ -27,8 +27,10 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	def get_settings_defaults(self):
 		return dict(enable_tool = True,
 					enable_bed = True,
+					enable_chamber = True,
 					fallback_tool = 0,
 					fallback_bed = 0,
+					fallback_chamber = 0,
 					wait_for_bed = False,
 					on_start_send_gcode = False,
 					on_start_send_gcode_command = "M117 Preheating... ; Update LCD",
@@ -82,6 +84,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	def read_temperatures_from_file(self, path_on_disk):
 		enable_bed = self._settings.get_boolean(["enable_bed"])
 		enable_tool = self._settings.get_boolean(["enable_tool"])
+		enable_chamber = self._settings.get_boolean(["enable_chamber"])
 
 		file = open(path_on_disk, 'r')
 		line = file.readline()
@@ -108,6 +111,10 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 						_, temperature = self.parse_line(line)
 						if temperature != None and "bed" not in temperatures:
 							temperatures["bed"] = temperature
+					if enable_chamber and (line.startswith("M191") or line.startswith("M141")):	# Set chamber temperature
+						_, temperature = self.parse_line(line)
+						if temperature != None and "chamber" not in temperatures:
+							temperatures["chamber"] = temperature
 						
 					max_lines -= 1
 		except:
@@ -119,15 +126,20 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	def get_fallback_temperatures(self):
 		enable_bed = self._settings.get_boolean(["enable_bed"])
 		enable_tool = self._settings.get_boolean(["enable_tool"])
+		enable_chamber = self._settings.get_boolean(["enable_chamber"])
 		fallback_tool = self._settings.get_float(["fallback_tool"])
 		fallback_bed = self._settings.get_float(["fallback_bed"])
-		
+		fallback_chamber = self._settings.get_float(["fallback_chamber"])
+
 		printer_profile = self._printer._printerProfileManager.get_current_or_default()
 
 		result = dict()
 		
 		if enable_bed and fallback_bed > 0 and printer_profile["heatedBed"]:
 			result["bed"] = fallback_bed
+
+		if enable_chamber and fallback_chamber > 0 and printer_profile["heatedChamber"]:
+			result["chamber"] = fallback_chamber
 	
 		if enable_tool and fallback_tool > 0:
 			extruder_count = printer_profile["extruder"]["count"]
@@ -139,7 +151,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 
 	def get_temperatures(self):
-		if not self._settings.get_boolean(["enable_bed"]) and not self._settings.get_boolean(["enable_tool"]):
+		if not self._settings.get_boolean(["enable_bed"]) and \
+		not self._settings.get_boolean(["enable_tool"]) and \
+		not self._settings.get_boolean(["enable_chamber"]):
 			raise PreheatError("Preheating is disabled in the plugin settings.")
 
 		if (self._printer.get_current_job()["file"]["path"] == None):
@@ -147,6 +161,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 				temperatures = self.get_fallback_temperatures()
 			else:
 				raise PreheatError("No gcode file loaded.")
+		
 		elif self._printer.get_current_job()["file"]["origin"] == octoprint.filemanager.FileDestinations.SDCARD:
 			temperatures = self.get_fallback_temperatures()
 
@@ -154,6 +169,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 				raise PreheatError("Can't read the temperature from a gcode file stored on the SD card.")
 			else:
 				self._logger.info("Can't read the temperatures from the SD card, using fallback temperatures.")
+		
 		else:
 			file_name = self._printer.get_current_job()["file"]["path"]
 			path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)		
@@ -218,8 +234,15 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 	def preheat_thread(self, preheat_temperatures):
 		try:
-			if self._settings.get_boolean(["wait_for_bed"]) and "bed" in preheat_temperatures:
-				self.preheat_and_wait({"bed": preheat_temperatures["bed"]})
+			shoud_wait_for_bed = self._settings.get_boolean(["wait_for_bed"]) and "bed" in preheat_temperatures
+			should_wait_for_chamber = self._settings.get_boolean(["wait_for_bed"]) and self._settings.get_boolean(["enable_chamber"]) and "chamber" in preheat_temperatures
+			if shoud_wait_for_bed or should_wait_for_chamber:
+				items_to_wait_for = {}
+				if shoud_wait_for_bed:
+					items_to_wait_for["bed"] = preheat_temperatures["bed"]
+				if should_wait_for_chamber:
+					items_to_wait_for["chamber"] = preheat_temperatures["chamber"]
+				self.preheat_and_wait(items_to_wait_for)
 			
 			if self.is_notify_on_complete_enabled():
 				self.preheat_and_wait(preheat_temperatures)
