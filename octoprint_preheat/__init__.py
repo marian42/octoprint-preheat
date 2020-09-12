@@ -37,7 +37,8 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					on_complete_show_popup = False,
 					on_conplete_send_gcode = False,
 					on_conplete_send_gcode_command = "M117 Preheat complete. ; Update LCD\nM300 S660 P200 ; Beep",
-					use_fallback_when_no_file_selected = False
+					use_fallback_when_no_file_selected = False,
+					max_gcode_lines = 1000
 		)
 
 					
@@ -88,7 +89,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 		file = open(path_on_disk, 'r')
 		line = file.readline()
-		max_lines = 1000
+		max_lines = self._settings.get_int(["max_gcode_lines"])
 		temperatures = dict()
 		current_tool = "tool0"
 		try:

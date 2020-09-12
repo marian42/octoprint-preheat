@@ -12,3 +12,7 @@ Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wik
 or manually using this URL:
 
     https://github.com/marian42/octoprint-preheat/archive/master.zip
+
+## Troubleshooting
+
+If you have a printer that adds image data to the top of the G-Code file (Prusa Mini), the default of checking the first 1000 lines for set temperature commands might not be enough. Use the setting labeled "Max number of lines to look for preheat commands" to adjust how many lines are looked at.
