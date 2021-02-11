@@ -31,6 +31,9 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					fallback_tool = 0,
 					fallback_bed = 0,
 					fallback_chamber = 0,
+					offset_tool=0,				# offsets from plugin
+					offset_bed=0,
+					offset_chamber=0,
 					wait_for_bed = False,
 					on_start_send_gcode = False,
 					on_start_send_gcode_command = "M117 Preheating... ; Update LCD",
@@ -175,6 +178,8 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			file_name = self._printer.get_current_job()["file"]["path"]
 			path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)		
 			temperatures = self.read_temperatures_from_file(path_on_disk)
+			
+			temperatures = self.apply_offsets_from_plugin(temperatures)
 
 			if len(temperatures) == 0:
 				temperatures = self.get_fallback_temperatures()
@@ -190,6 +195,29 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		
 		return temperatures
 
+	def apply_offsets_from_plugin(self, temperatures):
+		for tool, temperature in temperatures.items():
+			temperatures[tool] = self.single_offset_apply(tool, temperature)
+		return temperatures
+
+	def single_offset_apply(self, tool, initial):
+		if tool.startswith('tool'):
+			tool = 'tool'
+		type_of_offset = 'offset_' + tool
+		offset = self._settings.get_float([type_of_offset]) or 0
+		if offset > 50:
+			self._logger.warn(
+				"Offset can't be higher than 50°! Decline {} offset.".format(tool))
+		elif (initial + offset) < 0:  # either throws error
+			self._logger.warn(
+				"Temperature can't be lower than 0°! Decline {} offset.".format(tool))
+		else:
+			initial += offset
+			self._logger.info('Applied heating offset of {} for {}'.format(offset, tool))
+			if initial >= 260:
+				self._logger.warn(
+					"Offset results in very high temperature of {}°".format(initial))
+		return initial
 
 	def check_state(self):
 		if not self._printer.is_operational() or self._printer.is_printing():
