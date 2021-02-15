@@ -97,6 +97,7 @@ $(function() {
 			var buttonContainer = $('#job_print')[0].parentElement;
 			buttonContainer.children[0].style.width = "100%";
 			buttonContainer.children[0].style.marginBottom = "10px";
+			buttonContainer.children[0].classList.remove("span4");
 			buttonContainer.children[1].style.marginLeft = "0";
 			
 			self.btnPreheat = document.createElement("button");
