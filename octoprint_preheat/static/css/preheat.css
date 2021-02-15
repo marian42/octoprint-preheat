@@ -1,9 +1,9 @@
 #touch body .progress-text-centered {
-	top: calc(2.125rem + 90px) !important;
+	margin-top: 60px !important;
 }
 
-#touch body #state {
-	padding-top: 155px !important;
+#touch body #state .accordion-inner {
+	padding-top: 45px !important;
 }
 
 .preheat_settings_item {
