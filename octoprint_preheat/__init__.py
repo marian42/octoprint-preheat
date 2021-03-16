@@ -197,27 +197,25 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 
 	def apply_offsets_from_plugin(self, temperatures):
 		for tool, temperature in temperatures.items():
-			temperatures[tool] = self.single_offset_apply(tool, temperature)
+			temperatures[tool] = self.apply_offset(tool, temperature)
 		return temperatures
 
-	def single_offset_apply(self, tool, initial):
+	def apply_offset(self, tool, temperature):
 		if tool.startswith('tool'):
 			tool = 'tool'
 		type_of_offset = 'offset_' + tool
 		offset = self._settings.get_float([type_of_offset]) or 0
 		if offset > 50:
 			self._logger.warn(
-				"Offset can't be higher than 50°! Decline {} offset.".format(tool))
-		elif (initial + offset) < 0:  # either throws error
-			self._logger.warn(
-				"Temperature can't be lower than 0°! Decline {} offset.".format(tool))
+				"Ignoring preheat temperature offset of {}° as it is above 50°.".format(tool))
 		else:
-			initial += offset
-			self._logger.info('Applied heating offset of {} for {}'.format(offset, tool))
-			if initial >= 260:
+			temperature = max(0, temperature + offset)
+			if (offset != 0):
+				self._logger.info('Applied preheat offset of {}° for {}.'.format(offset, tool))
+			if temperature >= 260 and offset >= 10:
 				self._logger.warn(
-					"Offset results in very high temperature of {}°".format(initial))
-		return initial
+					"Preheat offset results in very high temperature of {}°".format(temperature))
+		return temperature
 
 	def check_state(self):
 		if not self._printer.is_operational() or self._printer.is_printing():
