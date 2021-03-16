@@ -60,6 +60,35 @@
         </div>
 		<br><br>
 
+		<legend>Temperature offsets</legend>
+		<div>
+			Temperature offsets are used either to lower preheat temperatures to prevent thermall degradation or to make any allownce. Does not affect fallback temperatures.
+		</div>
+		<div class="preheat_settings_item">
+			<label class="control-label preheat_long_label">Nozzle temperature offset</label>
+			<div class="input-append">
+				<input type="number" step="1" onkeyup="if(this.value>50){this.value= 50}" min="-150" max="50" class="input-mini text-right" data-bind="value: settings.plugins.preheat.offset_tool">
+				<span class="add-on">&deg;</span>
+			</div>
+		</div>
+		<br>
+		<div class="preheat_settings_item">
+			<label class="control-label preheat_long_label">Bed temperature offset</label>
+			<div class="input-append">
+				<input type="number" step="1" onkeyup="if(this.value>50){this.value= 50}" min="-150" max="50" class="input-mini text-right" data-bind="value: settings.plugins.preheat.offset_bed">
+				<span class="add-on">&deg;</span>
+			</div>
+		</div>
+		<br>
+		<div class="preheat_settings_item">
+			<label class="control-label preheat_long_label">Chamber temperature offset</label>
+			<div class="input-append">
+				<input type="number" step="1" onkeyup="if(this.value>50){this.value= 50}" min="-150" max="50" class="input-mini text-right" data-bind="value: settings.plugins.preheat.offset_chamber">
+				<span class="add-on">&deg;</span>
+			</div>
+		</div>
+		<br><br>
+		
 		<legend>Sequenced Preheating</legend>
         <div>
 			Preheat bed and chamber first, heat printheads once the bed and chamber has
