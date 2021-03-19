@@ -41,7 +41,8 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					on_conplete_send_gcode = False,
 					on_conplete_send_gcode_command = "M117 Preheat complete. ; Update LCD\nM300 S660 P200 ; Beep",
 					use_fallback_when_no_file_selected = False,
-					max_gcode_lines = 1000
+					max_gcode_lines = 1000,
+					use_m109 = False
 		)
 
 					
@@ -229,14 +230,20 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 		initial_targets = {tool: current_temperatures[tool]["target"] for tool in preheat_temperatures.keys()}
 		for tool, temperature in preheat_temperatures.items():
 			initial_targets[tool] = temperature
+		
+		time_waited = 0
+		TIME_STEP = 0.4
 
 		while (True):
-			time.sleep(0.4)
+			time.sleep(TIME_STEP)
+			time_waited += TIME_STEP
 
 			current_temperatures = self._printer.get_current_temperatures()
-			for tool in initial_targets:
-				if current_temperatures[tool]["target"] != initial_targets[tool]:
-					raise PreheatError("Preheating cancelled because the temperature was changed manually.")
+
+			if time_waited > 10:
+				for tool in initial_targets:
+					if current_temperatures[tool]["target"] != initial_targets[tool]:
+						raise PreheatError("Preheating cancelled because the temperature was changed manually.")
 
 			if not self._printer.is_operational() or self._printer.is_printing():
 				raise PreheatError("Preheating cancelled because the printer state changed.")
@@ -284,7 +291,20 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 	def preheat_immediately(self, preheat_temperatures):
 		for tool, target in preheat_temperatures.items():
 			self._logger.info("Preheating " + tool + " to " + str(target) + ".")
+			
 			self._printer.set_temperature(tool, target)
+			
+			if self._settings.get_boolean(["use_m109"]):
+				self._logger.info("Using M109/M190/M191 commands to set the temperature.")
+				if tool.startswith("tool"):
+					command = "M109 S{0:d} T{1:s}".format(int(target), tool[4:])
+				elif tool == "bed":
+					command = "M190 S{0:d}".format(int(target))
+				elif tool == "chamber":
+					command = "M191 S{0:d}".format(int(target))
+				else:
+					continue
+				self._printer.commands(command)
 
 	def preheat(self):
 		self.check_state()

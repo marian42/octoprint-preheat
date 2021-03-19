@@ -131,5 +131,17 @@
 				<textarea class="input-block-level" data-bind="value: settings.plugins.preheat.on_conplete_send_gcode_command"></textarea>
 			</div>
 		</div>
+		
+		<br><br>
+		
+		<legend>Use M109/M190/M191 commands</legend>
+        <div>
+			Use M109/M190/M191 commands to set the temperature in addition to the regular temperature commands.
+			This will instruct the printer to wait until the temperature is reached and in turn will activate LEDs on some printers.
+		</div>
+		<label class="control-label">Enable</label>
+        <div class="controls">
+            <input type="checkbox" class="input-block-level" data-bind="checked: settings.plugins.preheat.use_m109">
+        </div>
     </div>
 </form>
