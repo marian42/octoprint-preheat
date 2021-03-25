@@ -42,7 +42,7 @@ $(function() {
 			});
 		};
 		
-		self.cooldown = function() {
+		self.setTemperaturesToZero = function() {
 			var targets = {};
 			for (tool of Object.keys(self.temperatureState.tools())) {
 				targets["tool" + tool] = 0;
@@ -81,6 +81,26 @@ $(function() {
 					}),
 					contentType: "application/json; charset=UTF-8"
 				});
+			}
+		};
+
+		self.cooldown = function() {			
+			if (self.settings.settings.plugins.preheat.use_m109()) {
+				$.ajax({
+					url: API_BASEURL + "printer/command",
+					type: "POST",
+					dataType: "json",
+					data: JSON.stringify({
+						commands: ["M108"],
+						parameters: {}
+					}),
+					contentType: "application/json; charset=UTF-8",
+					success: function() {
+						self.setTemperaturesToZero();
+					}
+				});
+			} else {
+				self.setTemperaturesToZero();
 			}
 		};
 		
