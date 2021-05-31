@@ -20,12 +20,12 @@ class PreheatError(Exception):
 		self.message = message
 
 class PreheatAPIPlugin(
-						octoprint.plugin.TemplatePlugin,
-						octoprint.plugin.SimpleApiPlugin,
-						octoprint.plugin.AssetPlugin,
-						octoprint.plugin.SettingsPlugin,
-						octoprint.plugin.EventHandlerPlugin,
-					):
+	octoprint.plugin.TemplatePlugin,
+	octoprint.plugin.SimpleApiPlugin,
+	octoprint.plugin.AssetPlugin,
+	octoprint.plugin.SettingsPlugin,
+	octoprint.plugin.EventHandlerPlugin,
+):
 	
 	def get_settings_defaults(self):
 		return dict(enable_tool = True,
@@ -38,7 +38,7 @@ class PreheatAPIPlugin(
 					offset_bed=0,
 					offset_chamber=0,
 					wait_for_bed = False,
-					auto_preheat = False,
+					preheat_on_file_select = False,
 					on_start_send_gcode = False,
 					on_start_send_gcode_command = "M117 Preheating... ; Update LCD",
 					on_complete_show_popup = False,
@@ -361,11 +361,11 @@ class PreheatAPIPlugin(
 
 	def on_event(self, event, payload):
 		self._logger.debug("Event received: " + event)
-		auto_preheat = self._settings.get_boolean(["auto_preheat"])
+		enable_preheat_on_file_select = self._settings.get_boolean(["preheat_on_file_select"])
 
-		if auto_preheat and event == "FileSelected":
+		if enable_preheat_on_file_select and event == "FileSelected":
 			self.preheat(file_name=payload["path"])
-		elif auto_preheat and event == "FileDeselected":
+		elif enable_preheat_on_file_select and event == "FileDeselected":
 			self._logger.info("FileDeselected event received, cooling down")
 			self.cooldown()
 
