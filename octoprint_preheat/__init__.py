@@ -19,10 +19,13 @@ class PreheatError(Exception):
 		super(PreheatError, self).__init__(message)
 		self.message = message
 
-class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
-					   octoprint.plugin.SimpleApiPlugin,
-					   octoprint.plugin.AssetPlugin,
-					   octoprint.plugin.SettingsPlugin):
+class PreheatAPIPlugin(
+						octoprint.plugin.TemplatePlugin,
+						octoprint.plugin.SimpleApiPlugin,
+						octoprint.plugin.AssetPlugin,
+						octoprint.plugin.SettingsPlugin,
+						octoprint.plugin.EventHandlerPlugin,
+					):
 	
 	def get_settings_defaults(self):
 		return dict(enable_tool = True,
@@ -35,6 +38,7 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 					offset_bed=0,
 					offset_chamber=0,
 					wait_for_bed = False,
+					auto_preheat = False,
 					on_start_send_gcode = False,
 					on_start_send_gcode_command = "M117 Preheating... ; Update LCD",
 					on_complete_show_popup = False,
@@ -332,6 +336,35 @@ class PreheatAPIPlugin(octoprint.plugin.TemplatePlugin,
 			except PreheatError as error:
 				self._logger.info("Preheat error: " + str(error.message))
 				return str(error.message), 405
+
+	##~~ EventHandlerPlugin mixin
+	def on_event(self, event, payload):
+		self._logger.debug("Event received: " + event)
+		auto_preheat = self._settings.get_boolean(["auto_preheat"])
+
+		if auto_preheat and event == "FileSelected":
+			self._logger.info("FileSelected event received, preheating")
+			self.preheat()
+		elif auto_preheat and event == "FileDeselected":
+			self._logger.info("FileDeselected event received, cooling down")
+			enable_bed = self._settings.get_boolean(["enable_bed"])
+			enable_tool = self._settings.get_boolean(["enable_tool"])
+			enable_chamber = self._settings.get_boolean(["enable_chamber"])
+
+			printer_profile = self._printer._printerProfileManager.get_current_or_default()
+
+			if enable_bed and printer_profile["heatedBed"]:
+				self._printer.set_temperature("bed", 0)
+
+			if enable_chamber and printer_profile["heatedChamber"]:
+				self._printer.set_temperature("chamber", 0)
+
+			if enable_tool:
+				extruder_count = printer_profile["extruder"]["count"]
+				for i in range(extruder_count):
+					self._printer.set_temperature("tool{0:d}".format(i), 0)
+		elif not auto_preheat and (event == "FileSelected" or event == "FileDeselected"):
+			self._logger.info("Auto preheat is not enabled.")
 
 	def get_gcode_script_variables(self, comm, script_type, script_name, *args, **kwargs):
 		if not script_type == "gcode":
