@@ -159,13 +159,18 @@ class PreheatAPIPlugin(
 		return result
 
 
-	def get_temperatures(self):
+	def get_temperatures(self, file_name=None):
 		if not self._settings.get_boolean(["enable_bed"]) and \
 		not self._settings.get_boolean(["enable_tool"]) and \
 		not self._settings.get_boolean(["enable_chamber"]):
 			raise PreheatError("Preheating is disabled in the plugin settings.")
 
-		if (self._printer.get_current_job()["file"]["path"] == None):
+		if file_name is not None:
+			path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)
+			temperatures = self.read_temperatures_from_file(path_on_disk)
+			temperatures = self.apply_offsets_from_plugin(temperatures)
+		
+		elif (self._printer.get_current_job()["file"]["path"] == None):
 			if self._settings.get_boolean(["use_fallback_when_no_file_selected"]):
 				temperatures = self.get_fallback_temperatures()
 			else:
@@ -183,15 +188,14 @@ class PreheatAPIPlugin(
 			file_name = self._printer.get_current_job()["file"]["path"]
 			path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)		
 			temperatures = self.read_temperatures_from_file(path_on_disk)
-			
 			temperatures = self.apply_offsets_from_plugin(temperatures)
 
+		if len(temperatures) == 0:
+			temperatures = self.get_fallback_temperatures()
 			if len(temperatures) == 0:
-				temperatures = self.get_fallback_temperatures()
-				if len(temperatures) == 0:
-					raise PreheatError("Could not find any preheat commands in the gcode file. You can configure fallback temperatures for this case.")
-				else:
-					self._logger.info("Could not find any preheat commands in the gcode file, using fallback temperatures.")
+				raise PreheatError("Could not find any preheat commands in the gcode file. You can configure fallback temperatures for this case.")
+			else:
+				self._logger.info("Could not find any preheat commands in the gcode file, using fallback temperatures.")
 
 		offsets = self._printer.get_current_data()["offsets"]
 		for tool in temperatures:
@@ -310,14 +314,14 @@ class PreheatAPIPlugin(
 					continue
 				self._printer.commands(command)
 
-	def preheat(self):
+	def preheat(self, file_name=None):
 		self.check_state()
 
 		if self._settings.get_boolean(["on_start_send_gcode"]):
 			command = self._settings.get(["on_start_send_gcode_command"])
 			self._printer.commands(command.split("\n"))
 
-		preheat_temperatures = self.get_temperatures()
+		preheat_temperatures = self.get_temperatures(file_name)
 
 		use_thread = self._settings.get_boolean(["wait_for_bed"]) or self.is_notify_on_complete_enabled()
 
@@ -337,34 +341,33 @@ class PreheatAPIPlugin(
 				self._logger.info("Preheat error: " + str(error.message))
 				return str(error.message), 405
 
-	##~~ EventHandlerPlugin mixin
+	def cooldown(self):
+		enable_bed = self._settings.get_boolean(["enable_bed"])
+		enable_tool = self._settings.get_boolean(["enable_tool"])
+		enable_chamber = self._settings.get_boolean(["enable_chamber"])
+
+		printer_profile = self._printer._printerProfileManager.get_current_or_default()
+
+		if enable_bed and printer_profile["heatedBed"]:
+			self._printer.set_temperature("bed", 0)
+
+		if enable_chamber and printer_profile["heatedChamber"]:
+			self._printer.set_temperature("chamber", 0)
+
+		if enable_tool:
+			extruder_count = printer_profile["extruder"]["count"]
+			for i in range(extruder_count):
+				self._printer.set_temperature("tool{0:d}".format(i), 0)
+
 	def on_event(self, event, payload):
 		self._logger.debug("Event received: " + event)
 		auto_preheat = self._settings.get_boolean(["auto_preheat"])
 
 		if auto_preheat and event == "FileSelected":
-			self._logger.info("FileSelected event received, preheating")
-			self.preheat()
+			self.preheat(file_name=payload["path"])
 		elif auto_preheat and event == "FileDeselected":
 			self._logger.info("FileDeselected event received, cooling down")
-			enable_bed = self._settings.get_boolean(["enable_bed"])
-			enable_tool = self._settings.get_boolean(["enable_tool"])
-			enable_chamber = self._settings.get_boolean(["enable_chamber"])
-
-			printer_profile = self._printer._printerProfileManager.get_current_or_default()
-
-			if enable_bed and printer_profile["heatedBed"]:
-				self._printer.set_temperature("bed", 0)
-
-			if enable_chamber and printer_profile["heatedChamber"]:
-				self._printer.set_temperature("chamber", 0)
-
-			if enable_tool:
-				extruder_count = printer_profile["extruder"]["count"]
-				for i in range(extruder_count):
-					self._printer.set_temperature("tool{0:d}".format(i), 0)
-		elif not auto_preheat and (event == "FileSelected" or event == "FileDeselected"):
-			self._logger.info("Auto preheat is not enabled.")
+			self.cooldown()
 
 	def get_gcode_script_variables(self, comm, script_type, script_name, *args, **kwargs):
 		if not script_type == "gcode":
