@@ -31,6 +31,7 @@ class PreheatAPIPlugin(
 		return dict(enable_tool = True,
 					enable_bed = True,
 					enable_chamber = True,
+					enable_area = False,
 					fallback_tool = 0,
 					fallback_bed = 0,
 					fallback_chamber = 0,
@@ -89,16 +90,46 @@ class PreheatAPIPlugin(
 				
 		return tool, temperature
 
+	def parse_line_printarea(self, line):
+		line = strip_comment(line)
+		
+		area = dict()
+		for item in line.split(" "):
+			self._logger.debug("parsing {}".format(repr(item)))
+			try:
+				if item.startswith("X"):
+					area["X"] = float(item[1:])
+					self._logger.debug("area[\"X\"] = '{}'".format(area["X"]))
+				elif item.startswith("Y"):
+					area["Y"] = float(item[1:])
+					self._logger.debug("area[\"Y\"] = '{}'".format(area["Y"]))
+				elif item.startswith("W"):
+					area["Width"] = float(item[1:])
+					self._logger.debug("area[\"Width\"] = '{}'".format(area["Width"]))
+				elif item.startswith("H"):
+					area["Height"] = float(item[1:])
+					self._logger.debug("area[\"Height\"] = '{}'".format(area["Height"]))
+			except ValueError:
+				self._logger.warn("Error parsing print area command: {}".format(line))
+				pass
+
+		if ("X" not in area) or ("Y" not in area) or ("Width" not in area) or ("Height" not in area):
+			self._logger.warn("Incomplete print area command: '{}' -> {}".format(line), str(area))
+			return dict(X = 0.0, Y = 0.0)
+		else:
+			return area
 
 	def read_temperatures_from_file(self, path_on_disk):
 		enable_bed = self._settings.get_boolean(["enable_bed"])
 		enable_tool = self._settings.get_boolean(["enable_tool"])
 		enable_chamber = self._settings.get_boolean(["enable_chamber"])
+		enable_area = self._settings.get_boolean(["enable_area"])
 
 		file = open(path_on_disk, 'r')
 		line = file.readline()
 		max_lines = self._settings.get_int(["max_gcode_lines"])
 		temperatures = dict()
+		area = None
 		current_tool = "tool0"
 		try:
 			with open(path_on_disk, "r") as file:
@@ -124,12 +155,14 @@ class PreheatAPIPlugin(
 						_, temperature = self.parse_line(line)
 						if temperature != None and "chamber" not in temperatures:
 							temperatures["chamber"] = temperature
+					if enable_area and line.startswith("M555"): # Print area for segmented bed, eg Prusa XL
+						area = self.parse_line_printarea(line)
 						
 					max_lines -= 1
 		except:
 			self._logger.exception("Something went wrong while trying to read the preheat temperature from {}".format(path_on_disk))
 		
-		return temperatures
+		return temperatures, area
 	
 	
 	def get_fallback_temperatures(self):
@@ -165,9 +198,11 @@ class PreheatAPIPlugin(
 		not self._settings.get_boolean(["enable_chamber"]):
 			raise PreheatError("Preheating is disabled in the plugin settings.")
 
+		area = None
+
 		if file_name is not None:
 			path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)
-			temperatures = self.read_temperatures_from_file(path_on_disk)
+			temperatures, area = self.read_temperatures_from_file(path_on_disk)
 			temperatures = self.apply_offsets_from_plugin(temperatures)
 		
 		elif (self._printer.get_current_job()["file"]["path"] == None):
@@ -187,7 +222,7 @@ class PreheatAPIPlugin(
 		else:
 			file_name = self._printer.get_current_job()["file"]["path"]
 			path_on_disk = octoprint.server.fileManager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file_name)		
-			temperatures = self.read_temperatures_from_file(path_on_disk)
+			temperatures, area = self.read_temperatures_from_file(path_on_disk)
 			temperatures = self.apply_offsets_from_plugin(temperatures)
 
 		if len(temperatures) == 0:
@@ -202,7 +237,7 @@ class PreheatAPIPlugin(
 			if tool in offsets:
 				temperatures[tool] += offsets[tool]
 		
-		return temperatures
+		return temperatures, area
 
 	def apply_offsets_from_plugin(self, temperatures):
 		for tool, temperature in temperatures.items():
@@ -295,6 +330,25 @@ class PreheatAPIPlugin(
 			self._logger.warn("Preheat error: " + str(error.message))
 			self._plugin_manager.send_plugin_message(self._identifier, dict(type="preheat_warning", message=error.message))
 
+	def set_print_area(self, area):
+		if (area is None) or ("X" not in area) or ("Y" not in area):
+			self._logger.warn("Print area was invalid: " + str(area))
+			area = dict(X = 0.0, Y = 0.0)
+		
+		parameters = ""
+		if ("X" in area):
+			parameters += "X{:.2f} ".format(area["X"])
+		if ("Y" in area):
+			parameters += "Y{:.2f} ".format(area["Y"])
+		if ("Width" in area):
+			parameters += "W{:.2f} ".format(area["Width"])
+		if ("Height" in area):
+			parameters += "H{:.2f} ".format(area["Height"])
+
+
+		command = "M555 " + parameters
+		self._logger.info("Setting print area with " + repr(command) + ".")
+		self._printer.commands(command)
 
 	def preheat_immediately(self, preheat_temperatures):
 		for tool, target in preheat_temperatures.items():
@@ -321,7 +375,10 @@ class PreheatAPIPlugin(
 			command = self._settings.get(["on_start_send_gcode_command"])
 			self._printer.commands(command.split("\n"))
 
-		preheat_temperatures = self.get_temperatures(file_name)
+		preheat_temperatures, area = self.get_temperatures(file_name)
+
+		if self._settings.get_boolean(["enable_area"]):
+			self.set_print_area(area)
 
 		use_thread = self._settings.get_boolean(["wait_for_bed"]) or self.is_notify_on_complete_enabled()
 
@@ -345,6 +402,7 @@ class PreheatAPIPlugin(
 		enable_bed = self._settings.get_boolean(["enable_bed"])
 		enable_tool = self._settings.get_boolean(["enable_tool"])
 		enable_chamber = self._settings.get_boolean(["enable_chamber"])
+		enable_area = self._settings.get_boolean(["enable_area"])
 
 		printer_profile = self._printer._printerProfileManager.get_current_or_default()
 
@@ -358,6 +416,9 @@ class PreheatAPIPlugin(
 			extruder_count = printer_profile["extruder"]["count"]
 			for i in range(extruder_count):
 				self._printer.set_temperature("tool{0:d}".format(i), 0)
+		
+		if enable_area:
+			self.set_print_area(dict(X = 0.0, Y = 0.0))		#when not specifing width and height, the complete area is used from statpoint X and Y
 
 	def on_event(self, event, payload):
 		self._logger.debug("Event received: " + event)
@@ -376,7 +437,9 @@ class PreheatAPIPlugin(
 		prefix = None
 		postfix = None
 		try:
-			variables = self.get_temperatures()
+			variables, area = self.get_temperatures()
+			if area is not None:
+				variables["printarea"] = area
 		except PreheatError:
 			variables = {}
 		return prefix, postfix, variables
