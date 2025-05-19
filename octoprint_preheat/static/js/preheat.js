@@ -100,7 +100,29 @@ $(function() {
 					}
 				});
 			} else {
-				self.setTemperaturesToZero();
+				$.ajax({
+					url: API_BASEURL + "plugin/preheat",
+					type: "POST",
+					dataType: "json",
+					data: JSON.stringify({
+						command: "cooldown"
+					}),
+					contentType: "application/json; charset=UTF-8",
+					error: function (data, status) {
+						var options = {
+							title: "Cooldown failed.",
+							text: "some text" + data.responseText,
+							hide: true,
+							buttons: {
+								sticker: false,
+								closer: true
+							},
+							type: "error"
+						};
+
+						new PNotify(options);
+					}
+				});
 			}
 		};
 

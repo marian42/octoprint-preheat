@@ -66,7 +66,8 @@ class PreheatAPIPlugin(
 		
 	def get_api_commands(self):
 		return dict(
-			preheat = []
+			preheat = [],
+			cooldown = [],
 		)
 
 		
@@ -396,6 +397,12 @@ class PreheatAPIPlugin(
 				self.preheat()
 			except PreheatError as error:
 				self._logger.info("Preheat error: " + str(error.message))
+				return str(error.message), 405
+		elif command == "cooldown":
+			try:
+				self.cooldown()
+			except PreheatError as error:
+				self._logger.info("Cooldown error: " + str(error.message))
 				return str(error.message), 405
 
 	def cooldown(self):
