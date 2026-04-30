@@ -10,8 +10,6 @@ import time
 from flask_babel import gettext
 from threading import Thread
 
-__plugin_pythoncompat__ = ">=2.7,<4"
-
 class PreheatError(Exception):
 	def __init__(self, message):
 		super(PreheatError, self).__init__(message)
@@ -432,7 +430,7 @@ class PreheatAPIPlugin(
 
 __plugin_name__ = "Preheat Button"
 __plugin_implementation__ = PreheatAPIPlugin()
-
+__plugin_pythoncompat__ = ">=2.7,<4"
 __plugin_hooks__ = {
 	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
 	"octoprint.comm.protocol.scripts": __plugin_implementation__.get_gcode_script_variables,
