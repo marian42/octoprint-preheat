@@ -140,7 +140,7 @@ class PreheatAPIPlugin(
 		fallback_bed = self._settings.get_float(["fallback_bed"])
 		fallback_chamber = self._settings.get_float(["fallback_chamber"])
 
-		printer_profile = self._printer._printerProfileManager.get_current_or_default()
+		printer_profile = self._printer_profile_manager.get_current_or_default()
 
 		result = dict()
 		
@@ -346,7 +346,7 @@ class PreheatAPIPlugin(
 		enable_tool = self._settings.get_boolean(["enable_tool"])
 		enable_chamber = self._settings.get_boolean(["enable_chamber"])
 
-		printer_profile = self._printer._printerProfileManager.get_current_or_default()
+		printer_profile = self._printer_profile_manager.get_current_or_default()
 
 		if enable_bed and printer_profile["heatedBed"]:
 			self._printer.set_temperature("bed", 0)
