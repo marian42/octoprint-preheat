@@ -5,7 +5,6 @@ from flask_login import current_user
 
 import octoprint.filemanager
 import octoprint.plugin
-from octoprint.util.comm import strip_comment
 from octoprint.printer import PrinterInterface
 
 import flask
@@ -26,6 +25,22 @@ class PreheatAPIPlugin(
 	octoprint.plugin.SettingsPlugin,
 	octoprint.plugin.EventHandlerPlugin,
 ):
+
+	@staticmethod
+	def strip_comment(line):
+		"""Strip ``;`` style gcode comments from a line, honoring ``\\`` escapes.
+		"""
+		if ";" not in line:
+			return line
+
+		escaped = False
+		result = []
+		for c in line:
+			if c == ";" and not escaped:
+				break
+			result.append(c)
+			escaped = (c == "\\") and not escaped
+		return "".join(result)
 	
 	def get_settings_defaults(self):
 		return dict(enable_tool = True,
@@ -70,7 +85,7 @@ class PreheatAPIPlugin(
 
 		
 	def parse_line(self, line, tool="tool0"):
-		line = strip_comment(line)
+		line = self.strip_comment(line)
 		
 		temperature = None
 		for item in line.split(" "):
@@ -107,7 +122,7 @@ class PreheatAPIPlugin(
 					if line == "":
 						break
 					if line.startswith("T"): # Select tool
-						new_tool = "tool" + strip_comment(line)[1:].strip()
+						new_tool = "tool" + self.strip_comment(line)[1:].strip()
 						if new_tool == "tool":
 							new_tool = "tool0"
 						if PrinterInterface.valid_heater_regex.match(new_tool):
