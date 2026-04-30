@@ -1,14 +1,14 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-from flask_login import current_user
-
 import octoprint.filemanager
 import octoprint.plugin
+from octoprint.access.permissions import Permissions, ADMIN_GROUP, USER_GROUP
 from octoprint.printer import PrinterInterface
 
 import flask
 import time
+from flask_babel import gettext
 from threading import Thread
 
 __plugin_pythoncompat__ = ">=2.7,<4"
@@ -355,7 +355,7 @@ class PreheatAPIPlugin(
 
 	def on_api_command(self, command, data):
 		if command == "preheat":
-			if current_user.is_anonymous():
+			if not Permissions.PLUGIN_PREHEAT_USAGE.can():
 				return "Insufficient rights", 403
 			try:
 				self.preheat()
@@ -404,6 +404,17 @@ class PreheatAPIPlugin(
 		return prefix, postfix, variables
 
 
+	def get_additional_permissions(self, *args, **kwargs):
+		return [
+		dict(key="USAGE",
+				name="Use Preheat button",
+				description=gettext("Allows to use the Preheat button"),
+				roles=["user"],
+				dangerous=False,
+				default_groups=[ADMIN_GROUP, USER_GROUP])
+		]
+
+
 	def get_update_information(self, *args, **kwargs):
 		return dict(
 			preheat = dict(
@@ -425,5 +436,6 @@ __plugin_implementation__ = PreheatAPIPlugin()
 
 __plugin_hooks__ = {
 	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
-	"octoprint.comm.protocol.scripts": __plugin_implementation__.get_gcode_script_variables
+	"octoprint.comm.protocol.scripts": __plugin_implementation__.get_gcode_script_variables,
+	"octoprint.access.permissions": __plugin_implementation__.get_additional_permissions,
 }
