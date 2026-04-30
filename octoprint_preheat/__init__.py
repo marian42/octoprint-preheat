@@ -349,7 +349,10 @@ class PreheatAPIPlugin(
 			thread.start()
 		else:
 			self.preheat_immediately(preheat_temperatures)
-	
+
+	def is_api_protected(self):
+		return True
+
 	def on_api_command(self, command, data):
 		if command == "preheat":
 			if current_user.is_anonymous():
