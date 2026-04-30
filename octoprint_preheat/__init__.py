@@ -6,7 +6,6 @@ import octoprint.plugin
 from octoprint.access.permissions import Permissions, ADMIN_GROUP, USER_GROUP
 from octoprint.printer import PrinterInterface
 
-import flask
 import time
 from flask_babel import gettext
 from threading import Thread
