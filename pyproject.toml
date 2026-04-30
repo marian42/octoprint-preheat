@@ -1,0 +1,42 @@
+[build-system]
+requires = [
+    "setuptools>=68",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Preheat"
+version = "0.8.0"
+description = "Automatically heat printhead to the printing temperature of the current gcode file"
+authors = [
+    { name = "Marian Kleineberg", email = "mail@marian42.de" },
+]
+requires-python = ">=2.7,<4"
+dependencies = []
+dynamic = [
+    "license",
+]
+
+[project.entry-points."octoprint.plugin"]
+preheat = "octoprint_preheat"
+
+[project.urls]
+Homepage = "https://github.com/marian42/octoprint-preheat"
+
+[project.optional-dependencies]
+develop = [
+    "go-task-bin",
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = [
+    "octoprint_preheat",
+    "octoprint_preheat.*",
+]

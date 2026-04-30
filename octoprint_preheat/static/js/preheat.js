@@ -15,6 +15,7 @@ $(function() {
 		self.temperatureState = parameters[1];
 		self.printerState = parameters[2];
 		self.settings = parameters[3];
+		self.access = parameters[4];
 
 		self.preheat = function() {
 			$.ajax({
@@ -175,6 +176,7 @@ $(function() {
 			self.btnPreheat.disabled = !self.temperatureState.isReady()
 				|| self.temperatureState.isPrinting()
 				|| !self.loginState.isUser()
+				|| !self.loginState.hasPermission(self.access.permissions.PLUGIN_PREHEAT_USAGE)
 				|| (target == 0 && self.printerState.filename() == null && !self.settings.settings.plugins.preheat.use_fallback_when_no_file_selected());
 		};
 
@@ -189,7 +191,7 @@ $(function() {
 			if (plugin == "preheat" && data.type == "preheat_warning") {
 				new PNotify({
 					title: 'Preheating cancelled',
-					text: data.message,
+					text: _.escape(data.message),
 					type: 'warning'
 				});
 			}
@@ -202,7 +204,7 @@ $(function() {
 
 	OCTOPRINT_VIEWMODELS.push([
 		PreheatViewModel,
-		["loginStateViewModel", "temperatureViewModel", "printerStateViewModel", "settingsViewModel"],
+		["loginStateViewModel", "temperatureViewModel", "printerStateViewModel", "settingsViewModel", "accessViewModel"],
 		[]
 	]);
 });

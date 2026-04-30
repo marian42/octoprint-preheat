@@ -1,18 +1,14 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-from flask_login import current_user
-
 import octoprint.filemanager
 import octoprint.plugin
-from octoprint.util.comm import strip_comment
+from octoprint.access.permissions import Permissions, ADMIN_GROUP, USER_GROUP
 from octoprint.printer import PrinterInterface
 
-import flask
 import time
+from flask_babel import gettext
 from threading import Thread
-
-__plugin_pythoncompat__ = ">=2.7,<4"
 
 class PreheatError(Exception):
 	def __init__(self, message):
@@ -26,6 +22,22 @@ class PreheatAPIPlugin(
 	octoprint.plugin.SettingsPlugin,
 	octoprint.plugin.EventHandlerPlugin,
 ):
+
+	@staticmethod
+	def strip_comment(line):
+		"""Strip ``;`` style gcode comments from a line, honoring ``\\`` escapes.
+		"""
+		if ";" not in line:
+			return line
+
+		escaped = False
+		result = []
+		for c in line:
+			if c == ";" and not escaped:
+				break
+			result.append(c)
+			escaped = (c == "\\") and not escaped
+		return "".join(result)
 	
 	def get_settings_defaults(self):
 		return dict(enable_tool = True,
@@ -49,7 +61,11 @@ class PreheatAPIPlugin(
 					use_m109 = False
 		)
 
-					
+
+	def is_template_autoescaped(self):
+		return True
+			
+		
 	def get_template_configs(self):
 		return [
 			dict(type="settings", custom_bindings = False)
@@ -70,7 +86,7 @@ class PreheatAPIPlugin(
 
 		
 	def parse_line(self, line, tool="tool0"):
-		line = strip_comment(line)
+		line = self.strip_comment(line)
 		
 		temperature = None
 		for item in line.split(" "):
@@ -107,22 +123,22 @@ class PreheatAPIPlugin(
 					if line == "":
 						break
 					if line.startswith("T"): # Select tool
-						new_tool = "tool" + strip_comment(line)[1:].strip()
+						new_tool = "tool" + self.strip_comment(line)[1:].strip()
 						if new_tool == "tool":
 							new_tool = "tool0"
 						if PrinterInterface.valid_heater_regex.match(new_tool):
 							current_tool = new_tool
 					if enable_tool and (line.startswith("M104") or line.startswith("M109")): # Set tool temperature
 						tool, temperature = self.parse_line(line, current_tool)
-						if temperature != None and tool not in temperatures:
+						if temperature is not None and tool not in temperatures:
 							temperatures[tool] = temperature
 					if enable_bed and (line.startswith("M190") or line.startswith("M140")):	# Set bed temperature
 						_, temperature = self.parse_line(line)
-						if temperature != None and "bed" not in temperatures:
+						if temperature is not None and "bed" not in temperatures:
 							temperatures["bed"] = temperature
 					if enable_chamber and (line.startswith("M191") or line.startswith("M141")):	# Set chamber temperature
 						_, temperature = self.parse_line(line)
-						if temperature != None and "chamber" not in temperatures:
+						if temperature is not None and "chamber" not in temperatures:
 							temperatures["chamber"] = temperature
 						
 					max_lines -= 1
@@ -140,7 +156,7 @@ class PreheatAPIPlugin(
 		fallback_bed = self._settings.get_float(["fallback_bed"])
 		fallback_chamber = self._settings.get_float(["fallback_chamber"])
 
-		printer_profile = self._printer._printerProfileManager.get_current_or_default()
+		printer_profile = self._printer_profile_manager.get_current_or_default()
 
 		result = dict()
 		
@@ -170,7 +186,7 @@ class PreheatAPIPlugin(
 			temperatures = self.read_temperatures_from_file(path_on_disk)
 			temperatures = self.apply_offsets_from_plugin(temperatures)
 		
-		elif (self._printer.get_current_job()["file"]["path"] == None):
+		elif (self._printer.get_current_job()["file"]["path"] is None):
 			if self._settings.get_boolean(["use_fallback_when_no_file_selected"]):
 				temperatures = self.get_fallback_temperatures()
 			else:
@@ -330,10 +346,13 @@ class PreheatAPIPlugin(
 			thread.start()
 		else:
 			self.preheat_immediately(preheat_temperatures)
-	
+
+	def is_api_protected(self):
+		return True
+
 	def on_api_command(self, command, data):
 		if command == "preheat":
-			if current_user.is_anonymous():
+			if not Permissions.PLUGIN_PREHEAT_USAGE.can():
 				return "Insufficient rights", 403
 			try:
 				self.preheat()
@@ -346,7 +365,7 @@ class PreheatAPIPlugin(
 		enable_tool = self._settings.get_boolean(["enable_tool"])
 		enable_chamber = self._settings.get_boolean(["enable_chamber"])
 
-		printer_profile = self._printer._printerProfileManager.get_current_or_default()
+		printer_profile = self._printer_profile_manager.get_current_or_default()
 
 		if enable_bed and printer_profile["heatedBed"]:
 			self._printer.set_temperature("bed", 0)
@@ -382,6 +401,17 @@ class PreheatAPIPlugin(
 		return prefix, postfix, variables
 
 
+	def get_additional_permissions(self, *args, **kwargs):
+		return [
+		dict(key="USAGE",
+				name="Use Preheat button",
+				description=gettext("Allows to use the Preheat button"),
+				roles=["user"],
+				dangerous=False,
+				default_groups=[ADMIN_GROUP, USER_GROUP])
+		]
+
+
 	def get_update_information(self, *args, **kwargs):
 		return dict(
 			preheat = dict(
@@ -400,8 +430,9 @@ class PreheatAPIPlugin(
 
 __plugin_name__ = "Preheat Button"
 __plugin_implementation__ = PreheatAPIPlugin()
-
+__plugin_pythoncompat__ = ">=2.7,<4"
 __plugin_hooks__ = {
 	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
-	"octoprint.comm.protocol.scripts": __plugin_implementation__.get_gcode_script_variables
+	"octoprint.comm.protocol.scripts": __plugin_implementation__.get_gcode_script_variables,
+	"octoprint.access.permissions": __plugin_implementation__.get_additional_permissions,
 }
