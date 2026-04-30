@@ -133,15 +133,15 @@ class PreheatAPIPlugin(
 							current_tool = new_tool
 					if enable_tool and (line.startswith("M104") or line.startswith("M109")): # Set tool temperature
 						tool, temperature = self.parse_line(line, current_tool)
-						if temperature != None and tool not in temperatures:
+						if temperature is not None and tool not in temperatures:
 							temperatures[tool] = temperature
 					if enable_bed and (line.startswith("M190") or line.startswith("M140")):	# Set bed temperature
 						_, temperature = self.parse_line(line)
-						if temperature != None and "bed" not in temperatures:
+						if temperature is not None and "bed" not in temperatures:
 							temperatures["bed"] = temperature
 					if enable_chamber and (line.startswith("M191") or line.startswith("M141")):	# Set chamber temperature
 						_, temperature = self.parse_line(line)
-						if temperature != None and "chamber" not in temperatures:
+						if temperature is not None and "chamber" not in temperatures:
 							temperatures["chamber"] = temperature
 						
 					max_lines -= 1
@@ -189,7 +189,7 @@ class PreheatAPIPlugin(
 			temperatures = self.read_temperatures_from_file(path_on_disk)
 			temperatures = self.apply_offsets_from_plugin(temperatures)
 		
-		elif (self._printer.get_current_job()["file"]["path"] == None):
+		elif (self._printer.get_current_job()["file"]["path"] is None):
 			if self._settings.get_boolean(["use_fallback_when_no_file_selected"]):
 				temperatures = self.get_fallback_temperatures()
 			else:
