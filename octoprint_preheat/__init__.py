@@ -64,7 +64,11 @@ class PreheatAPIPlugin(
 					use_m109 = False
 		)
 
-					
+
+	def is_template_autoescaped(self):
+		return True
+			
+		
 	def get_template_configs(self):
 		return [
 			dict(type="settings", custom_bindings = False)
