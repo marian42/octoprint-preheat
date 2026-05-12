@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Preheat"
-version = "0.8.0"
+version = "0.9.0"
 description = "Automatically heat printhead to the printing temperature of the current gcode file"
 authors = [
     { name = "Marian Kleineberg", email = "mail@marian42.de" },
